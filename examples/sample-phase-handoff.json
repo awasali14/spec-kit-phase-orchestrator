@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0",
+  "tasks_path": "examples/sample-tasks.md",
+  "mode": "phase",
+  "phase": {
+    "number": 3,
+    "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
+    "slug": "user-story-1-start-or-resume-a-package-priority-p1",
+    "purpose": null,
+    "independent_test": "A user can open a saved scholarship and start or resume a document package.",
+    "complete": false
+  },
+  "assigned_task_ids": ["T007", "T008", "T009", "T010", "T011"],
+  "test_tasks": [
+    {
+      "id": "T007",
+      "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`",
+      "completed": false,
+      "parallel": true,
+      "story": "US1",
+      "section": "Tests for Phase 3",
+      "line": 29
+    },
+    {
+      "id": "T008",
+      "text": "[P] [US1] Add start/resume hook test in `tests/unit/hooks/useApplicationDocumentEntry.test.js`",
+      "completed": false,
+      "parallel": true,
+      "story": "US1",
+      "section": "Tests for Phase 3",
+      "line": 30
+    }
+  ],
+  "implementation_tasks": [
+    {
+      "id": "T009",
+      "text": "[US1] Add workspace entry hook in `src/hooks/applicationDocuments/useApplicationDocumentEntry.js`",
+      "completed": false,
+      "parallel": false,
+      "story": "US1",
+      "section": "Implementation for Phase 3",
+      "line": 34
+    },
+    {
+      "id": "T010",
+      "text": "[US1] Add protected workspace route in `src/App.jsx`",
+      "completed": false,
+      "parallel": false,
+      "story": "US1",
+      "section": "Implementation for Phase 3",
+      "line": 35
+    },
+    {
+      "id": "T011",
+      "text": "[US1] Add saved scholarship apply button in `src/pages/SavedScholarshipApplyPage.jsx`",
+      "completed": false,
+      "parallel": false,
+      "story": "US1",
+      "section": "Implementation for Phase 3",
+      "line": 36
+    }
+  ],
+  "scope_rules": [
+    "Execute only Phase 3 tasks.",
+    "Do not replace, bypass, or modify the official /speckit.implement command.",
+    "Use exactly one worker for the selected phase when subagents or isolated worker contexts are supported.",
+    "Mark completed task checkboxes as [X] only after validation supports completion.",
+    "Do not stage or commit unrelated files."
+  ],
+  "validation": {
+    "expectations": [
+      "Run focused tests for the route, entry hook, and saved scholarship apply path.",
+      "If full validation is not feasible, record the closest targeted validation and the gap."
+    ],
+    "suggested_commands": [
+      "npm test -- applicationDocumentWorkspaceRoute",
+      "npm test -- useApplicationDocumentEntry"
+    ]
+  },
+  "documentation": {
+    "receipt_required": true,
+    "phase_doc_required": true,
+    "phase_doc_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "requirements": [
+      "Summarize completed tasks, changed files, validation, and issues.",
+      "Include one high-level Mermaid diagram for the phase flow."
+    ]
+  },
+  "post_phase_commit": {
+    "allowed": true,
+    "stage_unrelated_files": false
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "status": "completed",
+  "phase": {
+    "number": 3,
+    "title": "User Story 1 - Start Or Resume A Package (Priority: P1)"
+  },
+  "completed_task_ids": ["T007", "T008", "T009", "T010", "T011"],
+  "changed_files": [
+    "examples/sample-tasks.md",
+    "src/hooks/applicationDocuments/useApplicationDocumentEntry.js",
+    "src/App.jsx",
+    "src/pages/SavedScholarshipApplyPage.jsx",
+    "tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx",
+    "tests/unit/hooks/useApplicationDocumentEntry.test.js",
+    "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md"
+  ],
+  "validation": [
+    {
+      "command": "npm test -- applicationDocumentWorkspaceRoute",
+      "status": "passed",
+      "notes": "Route integration coverage passed."
+    },
+    {
+      "command": "npm test -- useApplicationDocumentEntry",
+      "status": "passed",
+      "notes": "Entry hook coverage passed."
+    }
+  ],
+  "documentation_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+  "receipt_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
+  "issues": [],
+  "commit": {
+    "hash": "example",
+    "subject": "feat(application-documents): implement phase 3 workspace entry"
+  }
+}

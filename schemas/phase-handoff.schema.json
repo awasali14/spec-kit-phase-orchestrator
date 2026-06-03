@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-handoff.schema.json",
+  "title": "Spec Kit Phase Handoff",
+  "description": "Information passed to a worker or local execution context for one phase-scoped Spec Kit implementation run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tasks_path",
+    "mode",
+    "phase",
+    "assigned_task_ids",
+    "scope_rules",
+    "validation",
+    "documentation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "tasks_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["next", "phase", "all"]
+    },
+    "phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "title", "complete"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slug": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": ["string", "null"]
+        },
+        "independent_test": {
+          "type": ["string", "null"]
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "assigned_task_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^T[0-9]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "test_tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      },
+      "default": []
+    },
+    "implementation_tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      },
+      "default": []
+    },
+    "scope_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expectations"],
+      "properties": {
+        "expectations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "suggested_commands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_required", "phase_doc_required"],
+      "properties": {
+        "receipt_required": {
+          "type": "boolean"
+        },
+        "phase_doc_required": {
+          "type": "boolean"
+        },
+        "phase_doc_path": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        }
+      }
+    },
+    "post_phase_commit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        },
+        "stage_unrelated_files": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "text", "completed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^T[0-9]+$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "parallel": {
+          "type": "boolean"
+        },
+        "story": {
+          "type": ["string", "null"]
+        },
+        "section": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

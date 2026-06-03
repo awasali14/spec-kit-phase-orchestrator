@@ -1,0 +1,32 @@
+schema_version: "1.0"
+
+extension:
+  id: "phase-orchestrator"
+  name: "Phase Orchestrator"
+  version: "1.0.0"
+  description: "Run Spec Kit tasks.md one phase at a time with clean agent context."
+  author: "awasali14"
+  repository: "https://github.com/awasali14/spec-kit-phase-orchestrator"
+  homepage: "https://github.com/awasali14/spec-kit-phase-orchestrator"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.7"
+  tools:
+    - name: "python"
+      version: ">=3.10"
+      required: true
+    - name: "git"
+      required: false
+
+provides:
+  commands:
+    - name: "speckit.phase-orchestrator.phase"
+      file: "commands/speckit.phase-orchestrator.phase.md"
+      description: "Run one Spec Kit tasks.md phase with clean agent context."
+
+tags:
+  - "workflow"
+  - "implementation"
+  - "orchestration"
+  - "tasks"

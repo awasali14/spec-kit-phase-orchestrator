@@ -1,0 +1,7 @@
+.git/
+.gitignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+speckit-phase-orchestrator-extension-publication-plan.md
+git-branch-plan.md

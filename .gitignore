@@ -1,1 +1,4 @@
 speckit-phase-orchestrator-extension-publication-plan.md
+git-branch-plan.md
+__pycache__/
+*.py[cod]
