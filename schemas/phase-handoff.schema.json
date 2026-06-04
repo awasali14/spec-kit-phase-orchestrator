@@ -52,6 +52,12 @@
         },
         "complete": {
           "type": "boolean"
+        },
+        "documentation_path": {
+          "type": "string"
+        },
+        "receipt_path": {
+          "type": "string"
         }
       }
     },
@@ -65,6 +71,13 @@
       "uniqueItems": true
     },
     "test_tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      },
+      "default": []
+    },
+    "tests_first_tasks": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/task"
@@ -112,7 +125,12 @@
     "documentation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["receipt_required", "phase_doc_required"],
+      "required": [
+        "receipt_required",
+        "phase_doc_required",
+        "phase_doc_path",
+        "receipt_path"
+      ],
       "properties": {
         "receipt_required": {
           "type": "boolean"
@@ -121,6 +139,9 @@
           "type": "boolean"
         },
         "phase_doc_path": {
+          "type": "string"
+        },
+        "receipt_path": {
           "type": "string"
         },
         "requirements": {

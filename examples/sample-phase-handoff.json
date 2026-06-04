@@ -8,10 +8,32 @@
     "slug": "user-story-1-start-or-resume-a-package-priority-p1",
     "purpose": null,
     "independent_test": "A user can open a saved scholarship and start or resume a document package.",
-    "complete": false
+    "complete": false,
+    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json"
   },
   "assigned_task_ids": ["T007", "T008", "T009", "T010", "T011"],
   "test_tasks": [
+    {
+      "id": "T007",
+      "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`",
+      "completed": false,
+      "parallel": true,
+      "story": "US1",
+      "section": "Tests for Phase 3",
+      "line": 29
+    },
+    {
+      "id": "T008",
+      "text": "[P] [US1] Add start/resume hook test in `tests/unit/hooks/useApplicationDocumentEntry.test.js`",
+      "completed": false,
+      "parallel": true,
+      "story": "US1",
+      "section": "Tests for Phase 3",
+      "line": 30
+    }
+  ],
+  "tests_first_tasks": [
     {
       "id": "T007",
       "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`",
@@ -80,7 +102,8 @@
   "documentation": {
     "receipt_required": true,
     "phase_doc_required": true,
-    "phase_doc_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "phase_doc_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
     "requirements": [
       "Summarize completed tasks, changed files, validation, and issues.",
       "Include one high-level Mermaid diagram for the phase flow."

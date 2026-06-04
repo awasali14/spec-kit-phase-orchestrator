@@ -13,11 +13,26 @@ from typing import Any
 
 
 PHASE_RE = re.compile(r"^##\s+Phase\s+(\d+):\s+(.+?)\s*$")
+TITLE_RE = re.compile(r"^#\s+Tasks:\s+(.+?)\s*$")
 SUBHEADING_RE = re.compile(r"^###\s+(.+?)\s*$")
 TASK_RE = re.compile(r"^- \[(?P<mark>[ xX])\]\s+(?P<id>T\d+)\s*(?P<body>.*)$")
 PURPOSE_RE = re.compile(r"^\*\*Purpose\*\*:\s*(.+?)\s*$")
 CHECKPOINT_RE = re.compile(r"^\*\*Checkpoint\*\*:\s*(.+?)\s*$")
 INDEPENDENT_TEST_RE = re.compile(r"^\*\*Independent Test\*\*:\s*(.+?)\s*$")
+TEST_SECTION_RE = re.compile(r"^tests(?:\s+first|\s+for\s+phase\s+\d+)?$", re.I)
+TEST_FILE_RE = re.compile(r"(^|[/`])(?:test_[^/`\s]+|[^/`\s]+\.(?:test|spec)\.[^/`\s]+)")
+HELPER_SETUP_RE = re.compile(
+    r"\b(?:fixtures?|fakes?|helpers?|mocks?|stubs?|setup|utilities?|utils?|"
+    r"factories|factory|builders?|scaffolding)\b",
+    re.I,
+)
+EXPLICIT_TEST_ACTION_RE = re.compile(
+    r"\b(?:add|create|write|implement|extend|update|run|execute|fix|verify)\b"
+    r".*\b(?:unit|integration|e2e|end-to-end|regression|acceptance|"
+    r"accessibility|a11y|contract)?\s*tests?\b",
+    re.I,
+)
+TEST_NOUN_RE = re.compile(r"\b(?:test|spec)\s+(?:file|case|suite|coverage|run|command)\b", re.I)
 
 
 @dataclass(frozen=True)
@@ -62,24 +77,53 @@ def parse_story(body: str) -> str | None:
 
 
 def is_test_task(task: Task) -> bool:
-    section = task.section.lower()
-    text = task.text.lower()
-    if section in {"tests first", "tests"} or section.startswith("tests "):
+    section = task.section.strip()
+    text = task.text
+
+    if TEST_SECTION_RE.match(section):
         return True
-    if re.search(r"\btests?\b", section):
+
+    if TEST_FILE_RE.search(text):
         return True
-    if re.search(r"\btest(s|ing)?\b", text):
+
+    if HELPER_SETUP_RE.search(text):
+        return False
+
+    if EXPLICIT_TEST_ACTION_RE.search(text) or TEST_NOUN_RE.search(text):
         return True
-    if "test_" in text or ".test." in text or ".spec." in text:
-        return True
+
     return False
 
 
-def parse_tasks(path: Path) -> list[Phase]:
+def infer_feature_slug(path: Path, feature_title: str | None) -> str:
+    if path.name == "tasks.md" and path.parent.name:
+        parent_slug = re.sub(r"^\d+-", "", path.parent.name)
+        if parent_slug and parent_slug not in {".", "specs"}:
+            return slugify(parent_slug)
+
+    if feature_title:
+        return slugify(feature_title)
+
+    return slugify(path.stem)
+
+
+def phase_paths(
+    phase: Phase, docs_dir: Path | None, feature_slug: str
+) -> tuple[str, str]:
+    base_dir = docs_dir if docs_dir is not None else Path("Documentation") / feature_slug
+    stem = f"phase-{phase.number}-{phase.slug}"
+    return (
+        (base_dir / f"{stem}-execution.md").as_posix(),
+        (base_dir / f"{stem}-receipt.json").as_posix(),
+    )
+
+
+def parse_tasks(path: Path) -> tuple[list[Phase], str | None]:
     phases: list[Phase] = []
     current: Phase | None = None
     section = "General"
     seen_numbers: set[int] = set()
+    feature_title: str | None = None
 
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -87,6 +131,11 @@ def parse_tasks(path: Path) -> list[Phase]:
         raise ValueError(f"tasks.md is not valid UTF-8: {path}") from exc
 
     for lineno, line in enumerate(lines, 1):
+        title_match = TITLE_RE.match(line)
+        if title_match and feature_title is None:
+            feature_title = title_match.group(1).strip()
+            continue
+
         phase_match = PHASE_RE.match(line)
         if phase_match:
             number = int(phase_match.group(1))
@@ -145,22 +194,27 @@ def parse_tasks(path: Path) -> list[Phase]:
     if not phases:
         raise ValueError(f"no Spec Kit phase headings found in {path}")
 
-    return phases
+    return phases, feature_title
 
 
 def task_to_dict(task: Task) -> dict[str, Any]:
     return asdict(task)
 
 
-def phase_to_dict(phase: Phase) -> dict[str, Any]:
+def phase_to_dict(
+    phase: Phase, docs_dir: Path | None = None, feature_slug: str = "feature"
+) -> dict[str, Any]:
     incomplete = phase.incomplete
     test_tasks = [task for task in incomplete if is_test_task(task)]
     implementation_tasks = [task for task in incomplete if task not in test_tasks]
+    documentation_path, receipt_path = phase_paths(phase, docs_dir, feature_slug)
 
     return {
         "number": phase.number,
         "title": phase.title,
         "slug": phase.slug,
+        "documentation_path": documentation_path,
+        "receipt_path": receipt_path,
         "purpose": phase.purpose,
         "checkpoint": phase.checkpoint,
         "independent_test": phase.independent_test,
@@ -174,6 +228,7 @@ def phase_to_dict(phase: Phase) -> dict[str, Any]:
             "implementation_tasks": len(implementation_tasks),
         },
         "test_tasks": [task_to_dict(task) for task in test_tasks],
+        "tests_first_tasks": [task_to_dict(task) for task in test_tasks],
         "implementation_tasks": [
             task_to_dict(task) for task in implementation_tasks
         ],
@@ -201,22 +256,36 @@ def select_phases(
     raise ValueError(f"unsupported mode: {mode}")
 
 
-def build_output(path: Path, mode: str, phase_number: int | None) -> dict[str, Any]:
-    phases = parse_tasks(path)
+def build_output(
+    path: Path,
+    mode: str,
+    phase_number: int | None,
+    docs_dir: Path | None = None,
+) -> dict[str, Any]:
+    phases, feature_title = parse_tasks(path)
+    feature_slug = infer_feature_slug(path, feature_title)
     selected = select_phases(phases, mode, phase_number)
     selected_phase = selected[0] if selected else None
     incomplete_phases = [phase for phase in phases if phase.incomplete]
 
     return {
         "tasks_path": str(path),
+        "feature_slug": feature_slug,
+        "docs_dir": docs_dir.as_posix() if docs_dir is not None else None,
         "mode": "phase" if phase_number is not None else mode,
         "requested_phase": phase_number,
         "phase_count": len(phases),
         "complete_phase_count": len([phase for phase in phases if phase.complete]),
         "incomplete_phase_count": len(incomplete_phases),
         "remaining_phase_count": len(incomplete_phases),
-        "selected_phase": phase_to_dict(selected_phase) if selected_phase else None,
-        "selected_phases": [phase_to_dict(phase) for phase in selected],
+        "selected_phase": (
+            phase_to_dict(selected_phase, docs_dir, feature_slug)
+            if selected_phase
+            else None
+        ),
+        "selected_phases": [
+            phase_to_dict(phase, docs_dir, feature_slug) for phase in selected
+        ],
         "all_phases": [
             {
                 "number": phase.number,
@@ -252,6 +321,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("tasks_path", type=Path)
     parser.add_argument("--mode", choices=["next", "all"], default="next")
     parser.add_argument("--phase", type=int)
+    parser.add_argument(
+        "--docs-dir",
+        type=Path,
+        help=(
+            "Directory for generated phase documentation and receipts. "
+            "Defaults to Documentation/{feature-slug}/."
+        ),
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -276,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        output = build_output(tasks_path, args.mode, args.phase)
+        output = build_output(tasks_path, args.mode, args.phase, args.docs_dir)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2

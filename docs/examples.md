@@ -110,13 +110,22 @@ Relevant output shape:
   "tasks_path": "examples/sample-tasks.md",
   "mode": "phase",
   "requested_phase": 3,
+  "feature_slug": "example-application-document-workspace",
   "phase_count": 6,
   "selected_phase": {
     "number": 3,
     "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
+    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
     "complete": false,
     "incomplete_task_ids": ["T007", "T008", "T009", "T010", "T011"],
     "test_tasks": [
+      {
+        "id": "T007",
+        "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`"
+      }
+    ],
+    "tests_first_tasks": [
       {
         "id": "T007",
         "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`"
@@ -132,6 +141,16 @@ Relevant output shape:
 }
 ```
 
+Use `--docs-dir` when a project or user supplies a custom documentation
+directory:
+
+```bash
+python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --docs-dir Documentation/custom-feature --json
+```
+
+That changes only the generated documentation and receipt directory; task
+selection and task classification stay the same.
+
 ## Sample Receipt
 
 See `examples/sample-phase-receipt.json` for a completed Phase 3 receipt. The
@@ -142,5 +161,6 @@ receipt records:
 3. Changed files.
 4. Validation commands and results.
 5. Documentation path.
-6. Issues or blockers.
-7. Optional commit information.
+6. Receipt path.
+7. Issues or blockers.
+8. Optional commit information.

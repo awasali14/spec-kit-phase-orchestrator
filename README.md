@@ -70,6 +70,15 @@ Run all remaining phases sequentially:
 /speckit.phase-orchestrator.phase all specs/002-feature/tasks.md
 ```
 
+Use a custom documentation directory:
+
+```text
+/speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --docs-dir Documentation/custom-feature
+```
+
+Without a custom location, generated phase documents and receipts go under
+`Documentation/{feature-slug}/`.
+
 ## Supported Agents
 
 The extension is designed for Spec Kit's agent integration system. It uses a

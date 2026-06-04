@@ -17,6 +17,7 @@ Use one of these prompt forms:
 /speckit.phase-orchestrator.phase next specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase all specs/002-feature/tasks.md
+/speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --docs-dir Documentation/custom-feature
 ```
 
 `next` selects the first phase that still has unchecked tasks.
@@ -43,7 +44,35 @@ python3 scripts/phase_tasks.py examples/sample-tasks.md --mode all --json
 ```
 
 The JSON output includes the selected phase, incomplete task IDs, test tasks,
-implementation tasks, and a queue of selected phases for `all`.
+`tests_first_tasks`, implementation tasks, generated documentation and receipt
+paths, and a queue of selected phases for `all`.
+
+By default, phase documentation and receipts are generated under:
+
+```text
+Documentation/{feature-slug}/phase-{number}-{phase-slug}-execution.md
+Documentation/{feature-slug}/phase-{number}-{phase-slug}-receipt.json
+```
+
+Use `--docs-dir <directory>` to override the generated directory:
+
+```bash
+python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --docs-dir Documentation/custom-feature --json
+```
+
+## Task Classification
+
+The parser separates incomplete tasks into `test_tasks` and
+`implementation_tasks` for worker handoff compatibility.
+
+Tasks are classified as tests when they are under headings like `Tests`,
+`Tests First`, or `Tests for Phase N`; when they use explicit test-writing or
+test-running wording; or when they target actual test/spec files such as
+`.test.*`, `.spec.*`, or `test_*`.
+
+Fixture, fake, helper, mock, setup, utility, factory, and scaffolding tasks are
+treated as implementation/setup tasks when their only test signal is a path
+under `tests/`.
 
 ## Validation And Documentation
 

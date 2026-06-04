@@ -13,7 +13,7 @@
     "src/pages/SavedScholarshipApplyPage.jsx",
     "tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx",
     "tests/unit/hooks/useApplicationDocumentEntry.test.js",
-    "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md"
+    "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md"
   ],
   "validation": [
     {
@@ -27,8 +27,8 @@
       "notes": "Entry hook coverage passed."
     }
   ],
-  "documentation_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-  "receipt_path": "Documentation/application-documents/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
+  "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+  "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
   "issues": [],
   "commit": {
     "hash": "example",
