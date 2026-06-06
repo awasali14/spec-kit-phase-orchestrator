@@ -14,7 +14,8 @@ boundaries, or mark tasks complete without a clear validation trail.
 
 Spec Kit Phase Orchestrator solves that by selecting one phase from an
 existing `tasks.md`, creating a compact phase handoff, running only that
-phase, writing a receipt, and stopping at a validation gate.
+phase, writing a Markdown execution document, recording a receipt contract,
+and stopping at a validation gate.
 
 ## What It Does
 
@@ -25,8 +26,9 @@ phase, writing a receipt, and stopping at a validation gate.
 5. Falls back to local execution when subagents are not available.
 6. Marks completed task checkboxes.
 7. Runs focused validation.
-8. Writes phase documentation and a phase receipt.
-9. Supports optional post-phase commits.
+8. Writes phase documentation and a receipt contract.
+9. Reviews the phase diff and creates one parent-owned post-phase commit by
+   default.
 
 ## What It Does Not Do
 
@@ -35,6 +37,7 @@ phase, writing a receipt, and stopping at a validation gate.
 3. It does not require Codex.
 4. It does not require Claude Code.
 5. It does not run destructive git operations by default.
+6. It does not push to remotes.
 
 ## Installation
 
@@ -76,8 +79,20 @@ Use a custom documentation directory:
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --docs-dir Documentation/custom-feature
 ```
 
-Without a custom location, generated phase documents and receipts go under
-`Documentation/{feature-slug}/`.
+Without a custom location, generated Markdown phase documents go under
+`Documentation/{feature-slug}/`. Receipt contracts are written separately under
+`.specify/phase-orchestrator/receipts/{feature-slug}/`.
+
+By default, the parent orchestrator reviews the completed phase, stages only
+selected-phase files, and creates one Conventional Commit after validation and
+receipt checks pass. To leave changes unstaged and uncommitted, add
+`--no-commit` or clearly say not to commit:
+
+```text
+/speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --no-commit
+```
+
+The orchestrator never pushes. Pushes remain user-owned.
 
 ## Supported Agents
 
@@ -93,9 +108,11 @@ not support subagents, it executes the same phase-scoped workflow locally.
 1. Official `/speckit.implement` remains untouched.
 2. Only the selected phase should be implemented.
 3. Validation must run before a phase is considered complete.
-4. Phase documentation and receipt files preserve the implementation trail.
+4. Phase documentation and receipt contracts preserve the implementation trail.
 5. Unrelated git changes should not be staged or committed.
 6. Mixed unrelated changes should stop the workflow for user guidance.
+7. Workers should never stage, commit, or push; post-phase commits are a parent
+   responsibility.
 
 ## Examples
 

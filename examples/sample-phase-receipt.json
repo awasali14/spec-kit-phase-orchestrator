@@ -28,7 +28,7 @@
     }
   ],
   "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-  "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
+  "receipt_path": ".specify/phase-orchestrator/receipts/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
   "issues": [],
   "commit": {
     "hash": "example",

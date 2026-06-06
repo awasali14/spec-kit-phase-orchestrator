@@ -111,10 +111,11 @@ def phase_paths(
     phase: Phase, docs_dir: Path | None, feature_slug: str
 ) -> tuple[str, str]:
     base_dir = docs_dir if docs_dir is not None else Path("Documentation") / feature_slug
+    receipt_dir = Path(".specify") / "phase-orchestrator" / "receipts" / feature_slug
     stem = f"phase-{phase.number}-{phase.slug}"
     return (
         (base_dir / f"{stem}-execution.md").as_posix(),
-        (base_dir / f"{stem}-receipt.json").as_posix(),
+        (receipt_dir / f"{stem}-receipt.json").as_posix(),
     )
 
 
@@ -325,8 +326,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--docs-dir",
         type=Path,
         help=(
-            "Directory for generated phase documentation and receipts. "
-            "Defaults to Documentation/{feature-slug}/."
+            "Directory for generated Markdown phase documentation. "
+            "Defaults to Documentation/{feature-slug}/. Receipt contracts "
+            "use .specify/phase-orchestrator/receipts/{feature-slug}/."
         ),
     )
     parser.add_argument("--json", action="store_true", dest="as_json")

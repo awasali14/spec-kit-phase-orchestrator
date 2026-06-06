@@ -161,6 +161,13 @@
         "allowed": {
           "type": "boolean"
         },
+        "default": {
+          "type": "boolean"
+        },
+        "opt_out_flag": {
+          "type": "string",
+          "const": "--no-commit"
+        },
         "stage_unrelated_files": {
           "type": "boolean",
           "const": false

@@ -93,6 +93,7 @@ two completed tasks and one incomplete task, so `next` selects Phase 1.
 /speckit.phase-orchestrator.phase next examples/sample-tasks.md
 /speckit.phase-orchestrator.phase phase 3 examples/sample-tasks.md
 /speckit.phase-orchestrator.phase all examples/sample-tasks.md
+/speckit.phase-orchestrator.phase phase 3 examples/sample-tasks.md --no-commit
 ```
 
 ## Parser Output
@@ -116,7 +117,7 @@ Relevant output shape:
     "number": 3,
     "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
     "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-    "receipt_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
+    "receipt_path": ".specify/phase-orchestrator/receipts/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
     "complete": false,
     "incomplete_task_ids": ["T007", "T008", "T009", "T010", "T011"],
     "test_tasks": [
@@ -148,19 +149,62 @@ directory:
 python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --docs-dir Documentation/custom-feature --json
 ```
 
-That changes only the generated documentation and receipt directory; task
-selection and task classification stay the same.
+That changes only the generated Markdown documentation directory. Receipt
+contracts stay under `.specify/phase-orchestrator/receipts/{feature-slug}/`
+unless the parent handoff uses an explicit user-provided receipt contract path.
 
-## Sample Receipt
+## Five-Phase Handoff Boundary
 
-See `examples/sample-phase-receipt.json` for a completed Phase 3 receipt. The
-receipt records:
+Use the source-controlled five-phase fixture when checking handoff boundaries:
+
+```bash
+python3 scripts/phase_tasks.py examples/five-phase-tasks.md --phase 4 --json
+```
+
+The worker handoff for Phase 4 should include only Phase 4 task IDs and task
+text. It should not include parent model or effort settings, worker-spawn
+instructions, all-mode queue instructions, post-phase staging, or tasks from
+Phases 1, 2, 3, or 5 as executable worker instructions.
+
+## Sample Receipt Contract
+
+See `examples/sample-phase-receipt.json` for a completed Phase 3 receipt
+contract. The receipt uses the schema-valid snake_case shape:
+
+```json
+{
+  "schema_version": "1.0",
+  "status": "completed",
+  "phase": {
+    "number": 3,
+    "title": "User Story 1 - Start Or Resume A Package (Priority: P1)"
+  },
+  "completed_task_ids": ["T007", "T008"],
+  "changed_files": ["examples/sample-tasks.md"],
+  "validation": [
+    {
+      "command": "npm test -- useApplicationDocumentEntry",
+      "status": "passed",
+      "notes": "Focused hook coverage passed."
+    }
+  ],
+  "documentation_path": "Documentation/example/phase-3-execution.md",
+  "receipt_path": ".specify/phase-orchestrator/receipts/example/phase-3-receipt.json",
+  "issues": [],
+  "commit": null
+}
+```
+
+The receipt contract records:
 
 1. Phase status.
 2. Completed task IDs.
 3. Changed files.
 4. Validation commands and results.
 5. Documentation path.
-6. Receipt path.
+6. Receipt contract path.
 7. Issues or blockers.
 8. Optional commit information.
+
+Use `completed_task_ids` and `changed_files`, not `completedTaskIds` or
+`changedFiles`.

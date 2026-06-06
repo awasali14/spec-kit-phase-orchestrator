@@ -11,16 +11,15 @@ Use this structure for the Markdown document written at the selected phase's
 - Tasks file: `[TASKS_PATH]`
 - Completed task IDs: [COMPLETED_TASK_IDS]
 - Documentation path: `[DOCUMENTATION_PATH]`
-- Receipt path: `[RECEIPT_PATH]`
 
 ## Work Completed
 
-Summarize the implementation, setup, and test-first work completed in this
-phase. Keep the summary tied to task IDs.
+Summarize only the implementation, setup, and test-first work completed in this
+selected phase. Keep the summary concise and tied to task IDs.
 
 ## Changed Files
 
-- `[PATH]` - [brief reason]
+- `[PATH]` - [brief selected-phase reason]
 
 ## Validation
 
@@ -30,14 +29,18 @@ phase. Keep the summary tied to task IDs.
 
 ## Phase Flow
 
-Use one high-level Mermaid diagram when it clarifies the phase. Keep labels
-short and avoid project-specific styling.
+Include one required styled Phase Flow Mermaid diagram unless the user
+explicitly asked to omit diagrams for this run. Keep labels short and copy the
+dark/emerald `classDef` and `linkStyle` lines from
+`references/mermaid-style.md` exactly unless the project already has diagram
+styling. Every command or step shown in the diagram must also be represented in
+Work Completed, Validation, or Issues And Caveats.
 
 ```mermaid
 flowchart LR
   classDef outer fill:#0A0A0A,stroke:#424242,color:#ffffff
   classDef inner fill:#1E1E1E,stroke:#424242,color:#ffffff
-  classDef node fill:#000000,stroke:#424242,color:#ffffff
+  classDef node fill:#161616,stroke:#424242,color:#ffffff
   linkStyle default stroke:#00E589,color:#00E589
 
   subgraph Phase["Selected phase"]
@@ -49,7 +52,7 @@ flowchart LR
   subgraph Gate["Validation gate"]
     direction TB
     C["Focused validation"]:::node
-    D["Receipt and docs"]:::node
+    D["Execution doc"]:::node
   end
 
   A --> B --> C --> D
@@ -58,12 +61,16 @@ flowchart LR
 
 ## Issues And Caveats
 
-Record blockers, validation gaps, risky assumptions, or follow-up work. Write
-`None` only when there are no caveats.
+Record blockers, selected-phase validation gaps, risky assumptions, or
+follow-up work. Write `None` only when there are no caveats.
+
+Do not invent undocumented validation steps. For example, do not claim a
+"confirmed missing-module failure" unless the command appears in the validation
+table or the gap is recorded here.
 ````
 
 ## Notes
 
 Use generic paths and wording unless the user supplied project-specific
-documentation requirements. If the user supplied an exact documentation or
-receipt path, preserve it.
+documentation requirements. If the user supplied an exact documentation path,
+preserve it.

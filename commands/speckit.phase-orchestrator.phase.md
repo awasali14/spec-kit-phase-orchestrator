@@ -13,9 +13,9 @@ the official /speckit.implement command.
 
 Use one of these forms:
 
-1. `next <tasks.md path> [--docs-dir <directory>]`
-2. `phase <number> <tasks.md path> [--docs-dir <directory>]`
-3. `all <tasks.md path> [--docs-dir <directory>]`
+1. `next <tasks.md path> [--docs-dir <directory>] [--no-commit]`
+2. `phase <number> <tasks.md path> [--docs-dir <directory>] [--no-commit]`
+3. `all <tasks.md path> [--docs-dir <directory>] [--no-commit]`
 
 Examples:
 
@@ -24,10 +24,14 @@ Examples:
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase all specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --docs-dir Documentation/custom-feature
+/speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --no-commit
 ```
 
-Users may also provide an explicit documentation file path or receipt file path
-in natural language. Those user-provided paths win over generated defaults.
+Users may also provide an explicit Markdown documentation file path or receipt
+contract path in natural language. Those user-provided paths win over generated
+defaults.
+If the user includes `--no-commit` or clearly says not to commit, skip
+post-phase staging and commit creation.
 
 ## Workflow
 
@@ -39,9 +43,10 @@ in natural language. Those user-provided paths win over generated defaults.
    `python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py <tasks.md> --mode all --json`.
    When the prompt includes `--docs-dir`, pass it through to the parser.
 4. If the user provided a documentation directory, documentation path, or
-   receipt path outside `--docs-dir`, use it exactly in the phase handoff.
-   Otherwise use the parser-generated root
-   `Documentation/{feature-slug}/phase-{number}-{phase-slug}-...` paths.
+   receipt contract path outside `--docs-dir`, use it exactly in the phase
+   handoff. Otherwise use the parser-generated Markdown documentation path
+   under `Documentation/{feature-slug}/` and receipt contract path under
+   `.specify/phase-orchestrator/receipts/{feature-slug}/`.
 5. Select exactly one phase to execute.
 6. Build the worker/local handoff from:
    - the parser JSON,
@@ -56,10 +61,28 @@ in natural language. Those user-provided paths win over generated defaults.
 10. Complete only the selected phase's incomplete tasks.
 11. Mark completed task checkboxes as `[X]`.
 12. Run focused validation.
-13. Write the phase receipt and phase documentation.
+13. Write the phase documentation and receipt contract.
 14. Re-run the parser for the same phase and confirm the expected task state.
-15. Stop after one phase unless the prompt used `all`.
-16. In `all` mode, the parent repeats this workflow one phase at a time and
+15. Confirm expected task completion and that the phase documentation and
+    receipt contract files exist.
+16. Validate the receipt shape against
+    `.specify/extensions/phase-orchestrator/schemas/phase-receipt.schema.json`
+    manually or with a lightweight JSON/schema check. At minimum, confirm it is
+    parseable JSON with the required snake_case top-level keys
+    `schema_version`, `status`, `phase`, `completed_task_ids`,
+    `changed_files`, `validation`, `documentation_path`, `receipt_path`, and
+    `issues`, and no ad hoc keys such as `completedTaskIds`, `changedFiles`,
+    `generatedAt`, `name`, or `priority`.
+17. Review `git status --short` and the phase diff.
+18. Unless the user provided `--no-commit` or clearly said not to commit, stage
+    only selected-phase files and create one professional Conventional Commit.
+    The commit body must include completed task IDs, changed files, validation,
+    Markdown documentation path, and receipt contract path.
+19. If commits are disabled, do not stage files. Report the changed files for
+    manual review.
+20. Never push. Pushing is always user-owned.
+21. Stop after one phase unless the prompt used `all`.
+22. In `all` mode, the parent repeats this workflow one phase at a time and
     re-runs the parser after each completed phase. Do not pass `all` mode or
     continuation instructions to the worker as executable instructions.
 
@@ -72,7 +95,7 @@ to create the worker prompt. The worker prompt must include:
    available, and incomplete task IDs.
 2. Test-first tasks and implementation/setup tasks from the parser output.
 3. Scope rules that stop the worker after the selected phase.
-4. Documentation and receipt paths.
+4. Markdown documentation path and receipt contract path.
 5. Focused validation expectations.
 6. Relevant invoker-supplied skills for the selected phase, including concise
    summaries of any parent-read references that the worker needs.
@@ -81,6 +104,13 @@ to create the worker prompt. The worker prompt must include:
    and task tracking.
 8. Previous completed phase documentation paths when supplied or discovered.
 9. MCP notes according to the availability policy in the worker prompt template.
+10. Receipt requirements that match
+    `.specify/extensions/phase-orchestrator/schemas/phase-receipt.schema.json`.
+11. The actual Mermaid style reference from
+    `.specify/extensions/phase-orchestrator/references/mermaid-style.md`,
+    including the `classDef` and `linkStyle` lines.
+12. Guidance that the Phase Flow Mermaid diagram is required unless the user
+    explicitly asked to omit diagrams for this run.
 
 The worker prompt must not include:
 
@@ -113,12 +143,21 @@ only when the selected phase tasks or skills mention database-layer work such
 as database, Supabase, Postgres, SQL, migrations, RLS, grants, or storage
 policies.
 
+## Mermaid Reference Handling
+
+Before handing work to a worker, paste or concisely summarize the actual
+`.specify/extensions/phase-orchestrator/references/mermaid-style.md` snippet in
+the `Mermaid style reference` section of the worker prompt. Include the
+`classDef` and `linkStyle` lines exactly so the worker can copy the
+dark/emerald style without guessing.
+
 ## Safety Rules
 
 1. Do not modify official `/speckit.implement`.
 2. Do not work on another phase unless `all` mode is active and the previous
    phase completed cleanly.
-3. Do not stage or commit unrelated files.
+3. Workers must not stage or commit. The parent may stage only selected-phase
+   files and create the post-phase commit unless the user opted out.
 4. If unrelated changes are mixed into the same file as phase changes, stop
    and ask the user how to proceed.
 5. If validation fails, document the failure and stop.
@@ -128,6 +167,45 @@ policies.
 8. Do not mention databases, MCP servers, or external services unless the
    selected phase tasks, user-requested skills, or available context make them
    relevant.
+9. Do not push to a remote repository.
+
+## Parent Post-Phase Commit
+
+After a worker or local phase run reports completion, the parent orchestrator
+owns the post-phase gate:
+
+1. Re-run the parser for the same phase.
+2. Confirm the expected task IDs are complete.
+3. Confirm the Markdown documentation and receipt contract files exist.
+4. Validate the receipt JSON shape against the receipt schema manually or with
+   a lightweight schema check.
+5. Confirm the Markdown phase execution document includes a Mermaid block
+   unless the user explicitly opted out.
+6. Review `git status --short` and the phase diff.
+7. Stage only selected-phase files.
+8. Create one professional Conventional Commit.
+
+Use a concise subject such as:
+
+```text
+feat(scope): complete phase 3 workspace entry
+```
+
+Include this information in the commit body:
+
+```text
+Completed tasks: T007, T008, T009
+Changed files:
+- path/to/file
+Validation:
+- npm test -- focused: passed
+Documentation: Documentation/.../phase-3-...-execution.md
+Receipt contract: .specify/phase-orchestrator/receipts/.../phase-3-...-receipt.json
+```
+
+If the user includes `--no-commit` or clearly says not to commit, skip staging
+and commit creation, then report changed files for manual review. Never push;
+the user owns pushing to remotes.
 
 ## Worker Final Summary
 

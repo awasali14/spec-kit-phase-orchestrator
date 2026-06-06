@@ -35,8 +35,9 @@ Tags: `workflow, implementation, orchestration, tasks`
 3. Keeps `/speckit.implement` untouched as the official implementation command.
 4. Uses clean worker handoffs when the active coding agent supports subagents.
 5. Falls back to local execution for agents without subagent support.
-6. Produces phase receipts, phase documentation, and validation summaries.
-7. Supports optional post-phase commits without staging unrelated files.
+6. Produces phase documentation, receipt contracts, and validation summaries.
+7. Creates parent-owned post-phase commits by default without staging
+   unrelated files, with `--no-commit` opt-out support.
 
 ## Testing Confirmation
 
