@@ -44,7 +44,7 @@ language. That user-provided path wins over generated defaults.
    parser-generated Markdown documentation path under
    `Documentation/{feature-slug}/`.
 5. Select exactly one phase to execute.
-6. Build the worker/local handoff from:
+6. Build the worker handoff from:
    - the parser JSON,
    - `.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`,
    - `.specify/extensions/phase-orchestrator/references/phase-doc-template.md`, and
@@ -53,7 +53,8 @@ language. That user-provided path wins over generated defaults.
    details are not worker instructions.
 8. If subagents or isolated worker contexts are supported, use exactly one
    worker for the selected phase.
-9. If subagents are not supported, abort and inform the user about it.
+9. If subagents or isolated worker contexts are not supported, abort and
+   inform the user about it.
 10. Write the phase documentation.
 11. Re-run the parser for the same phase and confirm the expected task state.
 12. Confirm expected task completion and that the phase documentation file
@@ -139,8 +140,8 @@ does not need to paste the style snippet into the worker prompt.
 
 ## Parent Post-Phase Commit
 
-After a worker or local phase run reports completion, the parent orchestrator
-owns the post-phase gate:
+After a worker reports completion, the parent orchestrator owns the post-phase
+gate:
 
 1. Re-run the parser for the same phase.
 2. Confirm the expected task IDs are complete.
@@ -174,10 +175,10 @@ the user owns pushing to remotes.
 
 ## Worker Final Summary
 
-The worker or local execution final summary must include:
+The worker final summary must include:
 
 1. Completed task IDs.
-2. Changed files.
+2. Modified and added/created files.
 3. Validation commands and results.
 4. Documentation path.
 5. Caveats, blockers, or validation gaps.

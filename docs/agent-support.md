@@ -6,10 +6,10 @@ supported integrations.
 
 ## Subagent-Capable Agents
 
-When the active coding agent supports subagents or isolated worker contexts,
-the command should use exactly one worker for the selected phase. That worker
-gets a compact handoff with the phase number, title, incomplete tasks, scope
-rules, validation expectations, and documentation requirements.
+The command requires subagents or isolated worker contexts. It should use
+exactly one worker for the selected phase. That worker gets a compact handoff
+with the phase number, title, incomplete tasks, scope rules, validation
+expectations, and documentation requirements.
 
 The worker should not stage, commit, spawn more workers, or continue to another
 phase. The parent context owns review, selected-file staging, post-phase
@@ -21,8 +21,8 @@ for creating the worker, not phase work. The worker prompt should include only
 sanitized phase instructions plus relevant user-requested skills and concise
 reference summaries.
 
-In `all` mode, the parent owns the queue. It should spawn or run one selected
-phase at a time, re-run the parser after each phase, confirm the Markdown
+In `all` mode, the parent owns the queue. It should spawn one selected-phase
+worker at a time, re-run the parser after each phase, confirm the Markdown
 phase document contains a Mermaid block unless the user opted out, review the
 phase diff, and keep `all` mode, continuation, staging, committing, and
 worker-spawn instructions out of the worker's executable prompt.
@@ -33,17 +33,11 @@ included only when the selected phase tasks or skills indicate database-layer
 work such as database, Supabase, Postgres, SQL, migrations, RLS, grants, or
 storage policies.
 
-## Local Fallback
+## Unsupported Agents
 
-When subagents are unavailable, the same phase-scoped workflow runs in the
-current agent conversation. The boundaries remain the same:
-
-1. Select one phase.
-2. Work only on that phase.
-3. Validate.
-4. Write Markdown documentation.
-5. Run the parent post-phase gate.
-6. Stop unless `all` mode is active and the phase completed cleanly.
+When subagents or isolated worker contexts are unavailable, the command should
+abort and inform the user. It should not run the phase in the current agent
+conversation because phase isolation is the core execution boundary.
 
 ## Commits
 

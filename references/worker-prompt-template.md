@@ -1,8 +1,8 @@
 # Worker Prompt Template
 
-Use this template to hand one selected Spec Kit phase to a worker or to local
-phase-scoped execution. Replace bracketed placeholders before use. Omit sections
-that are empty or irrelevant.
+Use this template to hand one selected Spec Kit phase to an isolated worker.
+Replace bracketed placeholders before use. Omit sections that are empty or
+irrelevant.
 
 ```text
 You are a sequential Spec Kit phase worker for this repository.

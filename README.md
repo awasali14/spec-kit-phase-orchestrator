@@ -23,9 +23,9 @@ gate.
 1. Parses an existing Spec Kit `tasks.md`.
 2. Selects `next`, `phase <number>`, or `all`.
 3. Runs one phase at a time.
-4. Spawns an isolated subagent for each phase when the active coding agent
-   supports it.
-5. Falls back to local execution when subagents are not available.
+4. Spawns an isolated subagent for each phase.
+5. Aborts with a clear message when subagents or isolated worker contexts are
+   unavailable.
 6. Marks completed task checkboxes.
 7. Runs focused validation.
 8. Writes phase documentation.
@@ -100,9 +100,9 @@ The orchestrator never pushes. Pushes remain user-owned.
 The extension is designed for Spec Kit's agent integration system. It uses a
 portable command prompt and supporting scripts rather than a Codex-only skill.
 
-If the current coding agent supports subagents or isolated worker contexts,
-the command uses exactly one worker for the selected phase. If the agent does
-not support subagents, it executes the same phase-scoped workflow locally.
+The command requires subagents or isolated worker contexts and uses exactly one
+worker for the selected phase. If the active coding agent does not support
+isolated workers, the command aborts and informs the user.
 
 ## Safety
 
