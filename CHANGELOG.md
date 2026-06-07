@@ -7,6 +7,6 @@
 1. Initial `speckit.phase-orchestrator.phase` command.
 2. Support for `next`, `phase <number>`, and `all` prompt modes.
 3. `tasks.md` phase parser.
-4. Phase handoff and receipt examples.
+4. Phase handoff example.
 5. Six-phase sample `tasks.md`.
 6. Documentation for agent-agnostic usage.

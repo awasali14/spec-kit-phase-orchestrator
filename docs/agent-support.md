@@ -22,11 +22,10 @@ sanitized phase instructions plus relevant user-requested skills and concise
 reference summaries.
 
 In `all` mode, the parent owns the queue. It should spawn or run one selected
-phase at a time, re-run the parser after each phase, validate the receipt
-shape, confirm the Markdown phase document contains a Mermaid block unless the
-user opted out, review the phase diff, and keep `all` mode, continuation,
-staging, committing, and worker-spawn instructions out of the worker's
-executable prompt.
+phase at a time, re-run the parser after each phase, confirm the Markdown
+phase document contains a Mermaid block unless the user opted out, review the
+phase diff, and keep `all` mode, continuation, staging, committing, and
+worker-spawn instructions out of the worker's executable prompt.
 
 When an Exa or equivalent code-context/web MCP is available, its availability
 can be included in every worker prompt. Database-specific MCP notes should be
@@ -42,16 +41,16 @@ current agent conversation. The boundaries remain the same:
 1. Select one phase.
 2. Work only on that phase.
 3. Validate.
-4. Write Markdown documentation and a receipt contract.
+4. Write Markdown documentation.
 5. Run the parent post-phase gate.
 6. Stop unless `all` mode is active and the phase completed cleanly.
 
 ## Commits
 
 Post-phase commits are parent-owned by default. After clean validation and
-receipt checks, the parent stages only selected-phase files and creates one
-Conventional Commit that records completed task IDs, changed files, validation,
-Markdown documentation path, and receipt contract path.
+documentation checks, the parent stages only selected-phase files and creates
+one Conventional Commit that records completed task IDs, changed files,
+validation, and Markdown documentation path.
 
 If the user includes `--no-commit` or clearly says not to commit, the parent
 skips staging and commit creation and reports changed files for manual review.
@@ -60,11 +59,9 @@ The orchestrator must never push; pushing is always user-owned.
 ## Documentation Paths
 
 When no custom documentation location is provided, phase documentation and
-receipt contracts should use the parser-generated paths: Markdown execution
-docs under `Documentation/{feature-slug}/` and receipt contracts under
-`.specify/phase-orchestrator/receipts/{feature-slug}/`. If the user provides a
-documentation directory, documentation path, or receipt contract path, use that
-location exactly.
+execution docs should use the parser-generated path under
+`Documentation/{feature-slug}/`. If the user provides a documentation directory
+or documentation path, use that location exactly.
 
 ## Agent Requirements
 

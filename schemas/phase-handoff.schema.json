@@ -55,9 +55,6 @@
         },
         "documentation_path": {
           "type": "string"
-        },
-        "receipt_path": {
-          "type": "string"
         }
       }
     },
@@ -126,22 +123,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "receipt_required",
         "phase_doc_required",
-        "phase_doc_path",
-        "receipt_path"
+        "phase_doc_path"
       ],
       "properties": {
-        "receipt_required": {
-          "type": "boolean"
-        },
         "phase_doc_required": {
           "type": "boolean"
         },
         "phase_doc_path": {
-          "type": "string"
-        },
-        "receipt_path": {
           "type": "string"
         },
         "requirements": {

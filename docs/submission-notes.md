@@ -10,7 +10,7 @@ Extension Name: `Phase Orchestrator`
 
 Version: `1.0.0`
 
-Description: `Run Spec Kit tasks.md one phase at a time with clean agent context.`
+Description: `Run Spec Kit tasks.md phase-by-phase by spawning isolated subagents for clean handoffs, validation, docs, and commits.`
 
 Author: `awasali14`
 
@@ -35,7 +35,7 @@ Tags: `workflow, implementation, orchestration, tasks`
 3. Keeps `/speckit.implement` untouched as the official implementation command.
 4. Uses clean worker handoffs when the active coding agent supports subagents.
 5. Falls back to local execution for agents without subagent support.
-6. Produces phase documentation, receipt contracts, and validation summaries.
+6. Produces phase documentation and validation summaries.
 7. Creates parent-owned post-phase commits by default without staging
    unrelated files, with `--no-commit` opt-out support.
 

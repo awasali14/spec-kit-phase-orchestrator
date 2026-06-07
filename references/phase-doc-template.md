@@ -19,7 +19,7 @@ selected phase. Keep the summary concise and tied to task IDs.
 
 ## Changed Files
 
-- `[PATH]` - [brief selected-phase reason]
+- `[PATH]` - [modified or added/created; brief selected-phase reason]
 
 ## Validation
 

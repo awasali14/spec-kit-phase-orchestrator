@@ -9,8 +9,7 @@
     "purpose": null,
     "independent_test": "A user can open a saved scholarship and start or resume a document package.",
     "complete": false,
-    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-    "receipt_path": ".specify/phase-orchestrator/receipts/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json"
+    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md"
   },
   "assigned_task_ids": ["T007", "T008", "T009", "T010", "T011"],
   "test_tasks": [
@@ -100,14 +99,11 @@
     ]
   },
   "documentation": {
-    "receipt_required": true,
     "phase_doc_required": true,
     "phase_doc_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-    "receipt_path": ".specify/phase-orchestrator/receipts/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-receipt.json",
     "requirements": [
-      "Summarize completed tasks, changed files, validation, and issues.",
-      "Include a required styled Phase Flow Mermaid diagram using the provided Mermaid reference unless the user explicitly asked to omit diagrams.",
-      "Write receipt JSON that conforms exactly to schemas/phase-receipt.schema.json as a validation/contract artifact."
+      "Summarize completed tasks, modified or added/created files, validation, and issues.",
+      "Include a required styled Phase Flow Mermaid diagram using the provided Mermaid reference unless the user explicitly asked to omit diagrams."
     ]
   }
 }

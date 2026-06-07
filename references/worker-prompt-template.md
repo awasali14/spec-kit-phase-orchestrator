@@ -40,7 +40,13 @@ Previous completed phase documentation:
 [PREVIOUS_PHASE_DOCS_OR_OMIT]
 
 Mermaid style reference:
-[MERMAID_STYLE_REFERENCE]
+Read `.specify/extensions/phase-orchestrator/references/mermaid-style.md` and
+copy its required `classDef` and `linkStyle` lines exactly into the Phase Flow
+diagram.
+
+Official implementation workflow/skill:
+Use `/speckit.implement` or `$speckit-implement` for implementation discipline
+and task tracking. Keep its use scoped to Phase [PHASE_NUMBER] only.
 
 Scope rules:
 - Complete only Phase [PHASE_NUMBER].
@@ -52,66 +58,16 @@ Scope rules:
 - Do not spawn subagents or workers.
 - Do not stage or commit changes.
 - Do not modify official /speckit.implement.
-- Use the official implementation workflow or skill when it is available
-  (`/speckit.implement` or `$speckit-implement`) for implementation discipline
-  and task tracking. Do not run it in a way that expands scope beyond the
-  selected phase.
 - Mark task checkboxes as [X] only after focused validation supports completion.
 - If unrelated changes are mixed into files you need to touch, report the issue
   instead of overwriting them.
 
 Documentation:
 - Write the Markdown phase execution document to: [DOCUMENTATION_PATH]
-- Write the phase receipt JSON contract to: [RECEIPT_PATH]
-- Use the phase documentation template when possible.
-- Include completed task IDs, changed files, validation, issues, and caveats.
-- Include a required styled Phase Flow Mermaid diagram unless the user
-  explicitly asked to omit diagrams for this run.
-- Copy the provided dark/emerald Mermaid `classDef` and `linkStyle` lines
-  exactly, including the `classDef` lines.
-- Every command or step shown in a Mermaid diagram must also be represented in
-  Work Completed, Validation, or Issues And Caveats.
-- Keep changed files and validation focused on the selected phase only.
-- Do not invent undocumented validation steps. For example, do not claim a
-  "confirmed missing-module failure" unless the command appears in the
-  validation table or the gap is recorded in caveats.
-- Treat the receipt JSON as a validation/contract artifact, not as user-facing
-  phase documentation.
-- The receipt JSON must conform exactly to
-  `.specify/extensions/phase-orchestrator/schemas/phase-receipt.schema.json`.
-- Required receipt keys are `schema_version`, `status`, `phase`,
-  `completed_task_ids`, `changed_files`, `validation`, `documentation_path`,
-  `receipt_path`, and `issues`. The optional key is `commit`.
-- Use the schema's snake_case keys exactly. Do not use alternate shapes such as
-  `completedTaskIds`, `changedFiles`, `generatedAt`, `name`, or `priority`.
-- Before your final summary, verify the receipt file is valid JSON and that its
-  top-level keys match the schema-required shape.
-
-Receipt checklist:
-
-```json
-{
-  "schema_version": "1.0",
-  "status": "completed",
-  "phase": {
-    "number": 1,
-    "title": "Selected Phase Title"
-  },
-  "completed_task_ids": ["[COMPLETED_TASK_ID]"],
-  "changed_files": ["path/to/file"],
-  "validation": [
-    {
-      "command": "command that was run",
-      "status": "passed",
-      "notes": "Short result"
-    }
-  ],
-  "documentation_path": "[DOCUMENTATION_PATH]",
-  "receipt_path": "[RECEIPT_PATH]",
-  "issues": [],
-  "commit": null
-}
-```
+- Use `.specify/extensions/phase-orchestrator/references/phase-doc-template.md`
+  as the source of truth for document structure and required contents.
+- Keep modified and added/created file entries and validation focused on the
+  selected phase only.
 
 Validation expectations:
 [VALIDATION_EXPECTATIONS]
@@ -126,8 +82,8 @@ Relevant MCP/tool notes:
 [MCP_NOTES_OR_OMIT]
 
 Stop after Phase [PHASE_NUMBER]. Your final summary must include completed task
-IDs, changed files, validation commands and results, documentation path, receipt
-path, and caveats or blockers.
+IDs, modified and added/created files, validation commands and results,
+documentation path, and caveats or blockers.
 ```
 
 ## Sanitization Rules

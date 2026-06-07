@@ -107,16 +107,12 @@ def infer_feature_slug(path: Path, feature_title: str | None) -> str:
     return slugify(path.stem)
 
 
-def phase_paths(
+def phase_documentation_path(
     phase: Phase, docs_dir: Path | None, feature_slug: str
-) -> tuple[str, str]:
+) -> str:
     base_dir = docs_dir if docs_dir is not None else Path("Documentation") / feature_slug
-    receipt_dir = Path(".specify") / "phase-orchestrator" / "receipts" / feature_slug
     stem = f"phase-{phase.number}-{phase.slug}"
-    return (
-        (base_dir / f"{stem}-execution.md").as_posix(),
-        (receipt_dir / f"{stem}-receipt.json").as_posix(),
-    )
+    return (base_dir / f"{stem}-execution.md").as_posix()
 
 
 def parse_tasks(path: Path) -> tuple[list[Phase], str | None]:
@@ -208,14 +204,13 @@ def phase_to_dict(
     incomplete = phase.incomplete
     test_tasks = [task for task in incomplete if is_test_task(task)]
     implementation_tasks = [task for task in incomplete if task not in test_tasks]
-    documentation_path, receipt_path = phase_paths(phase, docs_dir, feature_slug)
+    documentation_path = phase_documentation_path(phase, docs_dir, feature_slug)
 
     return {
         "number": phase.number,
         "title": phase.title,
         "slug": phase.slug,
         "documentation_path": documentation_path,
-        "receipt_path": receipt_path,
         "purpose": phase.purpose,
         "checkpoint": phase.checkpoint,
         "independent_test": phase.independent_test,
@@ -327,8 +322,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         type=Path,
         help=(
             "Directory for generated Markdown phase documentation. "
-            "Defaults to Documentation/{feature-slug}/. Receipt contracts "
-            "use .specify/phase-orchestrator/receipts/{feature-slug}/."
+            "Defaults to Documentation/{feature-slug}/."
         ),
     )
     parser.add_argument("--json", action="store_true", dest="as_json")
