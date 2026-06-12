@@ -39,11 +39,6 @@ Implementation/setup tasks:
 Previous completed phase documentation:
 [PREVIOUS_PHASE_DOCS_OR_OMIT]
 
-Mermaid style reference:
-Read `.specify/extensions/phase-orchestrator/references/mermaid-style.md` and
-copy its required `classDef` and `linkStyle` lines exactly into the Phase Flow
-diagram.
-
 Official implementation workflow/skill:
 Use `/speckit.implement` or `$speckit-implement` for implementation discipline
 and task tracking. Keep its use scoped to Phase [PHASE_NUMBER] only.
@@ -66,6 +61,9 @@ Documentation:
 - Write the Markdown phase execution document to: [DOCUMENTATION_PATH]
 - Use `.specify/extensions/phase-orchestrator/references/phase-doc-template.md`
   as the source of truth for document structure and required contents.
+- Read `.specify/extensions/phase-orchestrator/references/mermaid-style.md` and
+  copy its required `classDef` and `linkStyle` lines exactly into the Phase Flow
+  diagram.
 - Keep modified and added/created file entries and validation focused on the
   selected phase only.
 

@@ -21,6 +21,9 @@ SCRIPT = ROOT / "scripts" / "phase_tasks.py"
 MERMAID_STYLE = ROOT / "references" / "mermaid-style.md"
 PHASE_DOC_TEMPLATE = ROOT / "references" / "phase-doc-template.md"
 WORKER_PROMPT_TEMPLATE = ROOT / "references" / "worker-prompt-template.md"
+COMMAND_FILE = ROOT / "commands" / "speckit.phase-orchestrator.phase.md"
+EXTENSION_FILE = ROOT / "extension.yml"
+AGENT_SUPPORT = ROOT / "docs" / "agent-support.md"
 
 
 def style_lines(text: str) -> list[str]:
@@ -331,6 +334,46 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("linkStyle", template)
         self.assertNotIn("[MERMAID_STYLE_REFERENCE]", template)
         self.assertNotIn("optional styled Phase", template)
+
+    def test_worker_prompt_places_mermaid_reference_under_documentation(self) -> None:
+        body = worker_prompt_body(WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"))
+        before_documentation, documentation_and_after = body.split("Documentation:", 1)
+        documentation = documentation_and_after.split("Validation expectations:", 1)[0]
+
+        mermaid_path = ".specify/extensions/phase-orchestrator/references/mermaid-style.md"
+        phase_doc_path = ".specify/extensions/phase-orchestrator/references/phase-doc-template.md"
+        selected_phase_focus = "Keep modified and added/created file entries"
+
+        self.assertNotIn(mermaid_path, before_documentation)
+        self.assertIn(mermaid_path, documentation)
+        self.assertLess(documentation.index(phase_doc_path), documentation.index(mermaid_path))
+        self.assertLess(documentation.index(mermaid_path), documentation.index(selected_phase_focus))
+
+    def test_command_metadata_includes_trigger_friendly_skill_wording(self) -> None:
+        command_text = COMMAND_FILE.read_text(encoding="utf-8")
+        extension_text = EXTENSION_FILE.read_text(encoding="utf-8")
+        expected_description = (
+            "Use /speckit.phase-orchestrator.phase or "
+            "$speckit-phase-orchestrator-phase to run one Spec Kit tasks.md phase "
+            "with isolated subagent handoffs."
+        )
+
+        self.assertIn(f'description: "{expected_description}"', command_text)
+        self.assertIn(f'description: "{expected_description}"', extension_text)
+
+    def test_agent_support_documents_integration_skill_directories(self) -> None:
+        text = AGENT_SUPPORT.read_text(encoding="utf-8")
+
+        for expected in [
+            ".agents/skills",
+            ".cursor/skills",
+            ".claude/skills",
+            "Codex-installed",
+            "Cursor local testing",
+            "cursor-agent",
+            "specify integration switch cursor-agent",
+        ]:
+            self.assertIn(expected, text)
 
     def test_rendered_worker_handoff_includes_mermaid_reference_and_is_sanitized(self) -> None:
         prompt = render_worker_prompt_for_phase_four()

@@ -23,7 +23,7 @@ provides:
   commands:
     - name: "speckit.phase-orchestrator.phase"
       file: "commands/speckit.phase-orchestrator.phase.md"
-      description: "Run Spec Kit tasks.md phases with isolated subagent handoffs."
+      description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run one Spec Kit tasks.md phase with isolated subagent handoffs."
 
 tags:
   - "workflow"

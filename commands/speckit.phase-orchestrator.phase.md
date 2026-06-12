@@ -1,5 +1,5 @@
 ---
-description: Run Spec Kit tasks.md phases with isolated subagent handoffs.
+description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run one Spec Kit tasks.md phase with isolated subagent handoffs."
 ---
 
 # Speckit Phase

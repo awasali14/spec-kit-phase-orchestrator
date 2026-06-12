@@ -104,6 +104,12 @@ The command requires subagents or isolated worker contexts and uses exactly one
 worker for the selected phase. If the active coding agent does not support
 isolated workers, the command aborts and informs the user.
 
+Spec Kit generates extension skills for the active integration only. Codex uses
+`.agents/skills`, Cursor uses `.cursor/skills`, and Claude Code uses
+`.claude/skills`. A Codex-installed extension should not be expected to
+auto-register in Cursor; for Cursor testing, initialize or switch to the
+`cursor-agent` integration and install or re-register the extension.
+
 ## Safety
 
 1. Official `/speckit.implement` remains untouched.

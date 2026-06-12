@@ -39,6 +39,31 @@ When subagents or isolated worker contexts are unavailable, the command should
 abort and inform the user. It should not run the phase in the current agent
 conversation because phase isolation is the core execution boundary.
 
+## Spec Kit Skill Adoption
+
+Extension skills are generated for the active Spec Kit agent integration only.
+Do not expect a skill installed for one integration to auto-register in another
+agent.
+
+Common integration skill directories:
+
+1. Codex: `.agents/skills`
+2. Cursor: `.cursor/skills`
+3. Claude Code: `.claude/skills`
+
+A Codex-installed Phase Orchestrator extension under `.agents/skills` should
+not be treated as a Cursor install. Cursor local testing should initialize the
+project with the Cursor Spec Kit integration, or switch the active integration
+to Cursor and then install or re-register the extension.
+
+When repairing a project that was initialized for a different integration,
+prefer:
+
+```bash
+specify integration switch cursor-agent
+specify extension add --dev /path/to/spec-kit-phase-orchestrator
+```
+
 ## Commits
 
 Post-phase commits are parent-owned by default. After clean validation and
