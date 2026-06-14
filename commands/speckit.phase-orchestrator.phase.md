@@ -1,5 +1,5 @@
 ---
-description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run one Spec Kit tasks.md phase with isolated subagent handoffs."
+description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to orchestrate Spec Kit tasks.md execution phase-by-phase with isolated worker handoffs, validation, documentation, and optional commits."
 ---
 
 # Speckit Phase

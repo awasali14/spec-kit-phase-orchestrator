@@ -4,7 +4,7 @@ extension:
   id: "phase-orchestrator"
   name: "Phase Orchestrator"
   version: "1.0.0"
-  description: "Run Spec Kit tasks.md phase-by-phase by spawning isolated subagents for clean handoffs, validation, docs, and commits."
+  description: "Orchestrate Spec Kit tasks.md execution phase-by-phase with isolated worker handoffs, focused validation, documentation, and optional commits."
   author: "awasali14"
   repository: "https://github.com/awasali14/spec-kit-phase-orchestrator"
   homepage: "https://github.com/awasali14/spec-kit-phase-orchestrator"
@@ -23,7 +23,7 @@ provides:
   commands:
     - name: "speckit.phase-orchestrator.phase"
       file: "commands/speckit.phase-orchestrator.phase.md"
-      description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run one Spec Kit tasks.md phase with isolated subagent handoffs."
+      description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to orchestrate Spec Kit tasks.md execution phase-by-phase with isolated worker handoffs, validation, documentation, and optional commits."
 
 tags:
   - "workflow"

@@ -10,7 +10,7 @@ Extension Name: `Phase Orchestrator`
 
 Version: `1.0.0`
 
-Description: `Run Spec Kit tasks.md phase-by-phase by spawning isolated subagents for clean handoffs, validation, docs, and commits.`
+Description: `Orchestrate Spec Kit tasks.md execution phase-by-phase with isolated worker handoffs, focused validation, documentation, and optional commits.`
 
 Author: `awasali14`
 
