@@ -41,9 +41,10 @@ conversation because phase isolation is the core execution boundary.
 
 ## Spec Kit Skill Adoption
 
-Extension skills are generated for the active Spec Kit agent integration only.
-Do not expect a skill installed for one integration to auto-register in another
-agent.
+Spec Kit installs agent-facing command wrappers into the relevant integration
+directory when the extension is installed or reinstalled. Do not expect a
+wrapper registered for one integration to auto-register in another agent that
+is added later.
 
 Common integration skill directories:
 
@@ -51,18 +52,44 @@ Common integration skill directories:
 2. Cursor: `.cursor/skills`
 3. Claude Code: `.claude/skills`
 
-A Codex-installed Phase Orchestrator extension under `.agents/skills` should
-not be treated as a Cursor install. Cursor local testing should initialize the
-project with the Cursor Spec Kit integration, or switch the active integration
-to Cursor and then install or re-register the extension.
+The extension's supporting files remain under
+`.specify/extensions/phase-orchestrator/`. Seeing only `SKILL.md` in an agent
+skills directory is normal.
 
-When repairing a project that was initialized for a different integration,
-prefer:
+If another Spec Kit integration is added after Phase Orchestrator is already
+installed, re-register the extension for that integration.
+
+If the extension was originally installed with `--dev`, re-register it from
+the same local path:
 
 ```bash
-specify integration switch cursor-agent
 specify extension add --dev /path/to/spec-kit-phase-orchestrator
 ```
+
+If the extension was originally installed from a published release URL,
+re-register it with that same archive source:
+
+```bash
+specify extension add phase-orchestrator --from <published-release-url>
+```
+
+For newer Spec Kit CLIs, `--force` is optional when the command supports it.
+
+For older Spec Kit CLIs without `--force` on `specify extension add`, remove
+the extension and re-add it from the same original source:
+
+```bash
+specify extension remove phase-orchestrator
+specify extension add --dev /path/to/spec-kit-phase-orchestrator
+```
+
+If the original source was a published release URL, the re-add command becomes:
+
+```bash
+specify extension add phase-orchestrator --from <published-release-url>
+```
+
+Restart the coding agent after re-registering the extension.
 
 ## Commits
 

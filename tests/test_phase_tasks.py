@@ -369,10 +369,13 @@ class PhaseTasksParserTest(unittest.TestCase):
             ".agents/skills",
             ".cursor/skills",
             ".claude/skills",
-            "Codex-installed",
-            "Cursor local testing",
-            "cursor-agent",
-            "specify integration switch cursor-agent",
+            ".specify/extensions/phase-orchestrator/",
+            "Seeing only `SKILL.md`",
+            "installed with `--dev`",
+            "published release URL",
+            "same original source",
+            "--force",
+            "specify extension remove phase-orchestrator",
         ]:
             self.assertIn(expected, text)
 

@@ -49,11 +49,8 @@ Development install:
 specify extension add --dev /path/to/spec-kit-phase-orchestrator
 ```
 
-Release install:
-
-```bash
-specify extension add phase-orchestrator --from https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.0.zip
-```
+Pre-release note: the published tag install command will be documented here
+after the release tag exists and the release archive install flow is verified.
 
 ## Usage
 
@@ -104,11 +101,62 @@ The command requires subagents or isolated worker contexts and uses exactly one
 worker for the selected phase. If the active coding agent does not support
 isolated workers, the command aborts and informs the user.
 
-Spec Kit generates extension skills for the active integration only. Codex uses
-`.agents/skills`, Cursor uses `.cursor/skills`, and Claude Code uses
-`.claude/skills`. A Codex-installed extension should not be expected to
-auto-register in Cursor; for Cursor testing, initialize or switch to the
-`cursor-agent` integration and install or re-register the extension.
+Spec Kit installs agent-facing command wrappers into the relevant integration
+directory, such as `.agents/skills` for Codex, `.cursor/skills` for Cursor,
+and `.claude/skills` for Claude Code. The extension's supporting files remain
+under `.specify/extensions/phase-orchestrator/`.
+
+If you install another Spec Kit integration after Phase Orchestrator is already
+installed, re-register the extension for that integration using the
+troubleshooting steps below. Seeing only `SKILL.md` in the agent skills
+directory is normal.
+
+## Troubleshooting
+
+### Extension installed but not visible in Claude Code, Cursor, or another integration
+
+If you add another Spec Kit integration after installing Phase Orchestrator,
+the extension may need to be re-registered for that integration.
+
+If you originally installed the extension with `--dev`, re-register it from
+the same local path:
+
+```bash
+specify extension add --dev /path/to/spec-kit-phase-orchestrator
+```
+
+If you originally installed the extension from a published release URL,
+re-register it with that same release archive source:
+
+```bash
+specify extension add phase-orchestrator --from <published-release-url>
+```
+
+If your Spec Kit CLI supports reinstall with `--force`, you can add it to
+either command above.
+
+If your Spec Kit CLI does not support `--force` for `specify extension add`,
+remove the extension and re-add it from the same original source:
+
+```bash
+specify extension remove phase-orchestrator
+specify extension add --dev /path/to/spec-kit-phase-orchestrator
+```
+
+If the original source was a published release URL, the re-add command becomes:
+
+```bash
+specify extension add phase-orchestrator --from <published-release-url>
+```
+
+Restart the coding agent after re-registering the extension.
+
+`specify extension update phase-orchestrator` only helps when the extension is
+available from a configured Spec Kit extension catalog.
+
+Note: In Claude Code, seeing `SKILL.md` in `.claude/skills/` is normal.
+Supporting scripts and reference templates remain under
+`.specify/extensions/phase-orchestrator/`.
 
 ## Safety
 

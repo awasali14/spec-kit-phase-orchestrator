@@ -1,6 +1,7 @@
 # Spec Kit Extension Submission Notes
 
-Use these values for the Spec Kit Extension Submission issue.
+Pre-release draft. Use these values for the Spec Kit Extension Submission issue
+after the release tag exists and the release archive install flow is verified.
 
 ## Extension Metadata
 
@@ -17,6 +18,8 @@ Author: `awasali14`
 Repository: `https://github.com/awasali14/spec-kit-phase-orchestrator`
 
 Download URL: `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.0.zip`
+
+Download URL status: pending release creation and release-archive verification.
 
 License: `MIT`
 
@@ -40,17 +43,35 @@ Tags: `workflow, implementation, orchestration, tasks`
 7. Creates parent-owned post-phase commits by default without staging
    unrelated files, with `--no-commit` opt-out support.
 
-## Testing Confirmation
+## Manual Testing Record
 
-1. Extension installs successfully with `specify extension add --dev /path/to/spec-kit-phase-orchestrator`.
-2. Extension installs successfully from the GitHub release archive.
-3. Command file is present and usable after installation.
-4. Parser tests pass.
-5. Tested on a realistic Spec Kit `tasks.md` with six phases.
-6. Documentation is complete and accurate.
+Completed manual testing:
 
-Manual install and cross-agent testing are intentionally left for the manual
-testing phase.
+1. Parser CLI smoke tests completed for:
+   `python3 scripts/phase_tasks.py examples/sample-tasks.md --mode next --json`,
+   `python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --json`,
+   and
+   `python3 scripts/phase_tasks.py examples/sample-tasks.md --mode all --json`.
+2. Development install completed with
+   `specify extension add --dev /path/to/spec-kit-phase-orchestrator`.
+3. Codex wrapper was present after install.
+4. Adding Claude Code later reproduced the missing-wrapper issue.
+5. `specify extension remove phase-orchestrator` plus re-adding from the
+   original source fixed Claude registration.
+6. `specify integration use claude` succeeded.
+7. `specify extension update phase-orchestrator` reported that the extension
+   catalog entry was not found.
+
+Release-archive install testing is still pending because the public tag-backed
+archive does not exist yet.
+
+## Prerelease Guardrails
+
+1. Before publishing a tag-based install command, verify the tag exists remotely with `git ls-remote --tags origin <tag>`.
+2. Before release, verify every documented install URL returns `HTTP 200`, for example with `curl -I -L <install-url>`.
+3. If the extension is not published in a Spec Kit extension catalog, do not position `specify extension update phase-orchestrator` as the primary refresh or re-registration path.
+4. Catalog publication can be added later, but it should not block documentation or release-hygiene fixes.
+5. When a real release tag is published, update the README and submission notes together so the documented install command matches the tagged archive.
 
 ## AI Disclosure
 
