@@ -55,7 +55,10 @@ language. That user-provided path wins over generated defaults.
    worker for the selected phase.
 9. If subagents or isolated worker contexts are not supported, abort and
    inform the user about it.
-10. Write the phase documentation.
+10. The selected-phase worker must write the phase documentation to the
+    `documentation_path` resolved by the orchestrator, using the phase
+    documentation template. The parent orchestrator validates the resulting
+    document during the post-phase gate.
 11. Re-run the parser for the same phase and confirm the expected task state.
 12. Confirm expected task completion and that the phase documentation file
     exists.
