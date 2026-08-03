@@ -54,12 +54,16 @@ Completed manual testing:
    `python3 scripts/phase_tasks.py examples/sample-tasks.md --mode all --json`.
 2. Development install completed with
    `specify extension add --dev /path/to/spec-kit-phase-orchestrator`.
-3. Codex wrapper was present after install.
-4. Adding Claude Code later reproduced the missing-wrapper issue.
-5. `specify extension remove phase-orchestrator` plus re-adding from the
+3. Extension registration and command availability were verified successfully
+   on Codex, Claude Code, and Cursor.
+4. The extension workflow was manually tested successfully on Codex, Claude
+   Code, and Cursor.
+5. Adding Claude Code after the initial installation reproduced the
+   missing-wrapper issue.
+6. `specify extension remove phase-orchestrator` plus re-adding from the
    original source fixed Claude registration.
-6. `specify integration use claude` succeeded.
-7. `specify extension update phase-orchestrator` reported that the extension
+7. `specify integration use claude` succeeded.
+8. `specify extension update phase-orchestrator` reported that the extension
    catalog entry was not found.
 
 Release-archive install testing is still pending because the public tag-backed

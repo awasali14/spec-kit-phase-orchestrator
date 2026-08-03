@@ -97,6 +97,9 @@ The orchestrator never pushes. Pushes remain user-owned.
 The extension is designed for Spec Kit's agent integration system. It uses a
 portable command prompt and supporting scripts rather than a Codex-only skill.
 
+The extension has been manually tested successfully with Codex, Claude Code,
+and Cursor.
+
 The command requires subagents or isolated worker contexts and uses exactly one
 worker for the selected phase. If the active coding agent does not support
 isolated workers, the command aborts and informs the user.
@@ -178,6 +181,9 @@ See:
 3. `docs/examples.md`
 
 ## Testing
+
+Manual extension testing has been completed successfully on Codex, Claude
+Code, and Cursor.
 
 Run parser tests:
 

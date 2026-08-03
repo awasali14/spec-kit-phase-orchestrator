@@ -4,6 +4,17 @@ Spec Kit Phase Orchestrator is a Spec Kit extension command, not a Codex-only
 skill. The command wording is portable so Spec Kit can render it through
 supported integrations.
 
+## Verified Integrations
+
+Manual extension testing has been completed successfully with:
+
+1. Codex
+2. Claude Code
+3. Cursor
+
+These checks verify the extension on the three integrations above. Other
+integrations still need subagent or isolated-worker support to run the command.
+
 ## Subagent-Capable Agents
 
 The command requires subagents or isolated worker contexts. It should use
@@ -118,4 +129,4 @@ Claude Code is not required.
 Any agent integration that can execute the Spec Kit command prompt and run the
 supporting parser can use the workflow. Agents without a Python runtime can
 still follow the command text manually, but the packaged parser requires
-Python 3.9 or newer.
+Python 3.10 or newer.
