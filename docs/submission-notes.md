@@ -11,7 +11,7 @@ Extension Name: `Phase Orchestrator`
 
 Version: `1.0.0`
 
-Description: `Orchestrate Spec Kit tasks.md execution phase-by-phase with isolated worker handoffs, focused validation, documentation, and optional commits.`
+Description: `Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits.`
 
 Author: `awasali14`
 

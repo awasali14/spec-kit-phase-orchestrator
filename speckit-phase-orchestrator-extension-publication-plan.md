@@ -58,20 +58,13 @@ official documentation wins. Update this plan before continuing.
 
 ### Canonical Description
 
-1. **Status: Approved; implementation not started** — Use this description in
+1. **Status: Completed** — Use this description in
    `extension.yml`, submission metadata, and concise public summaries:
 
    ```text
-   Run Spec Kit tasks.md phase-by-phase with isolated workers and validation gates.
-   ```
-
-2. **Status: Completed** — Use this longer explanation where more context is
-   appropriate:
-
-   ```text
-   Spec Kit Phase Orchestrator runs existing Spec Kit tasks.md files one phase
-   at a time with isolated worker handoffs, focused validation, Markdown phase
-   execution documents, and parent-owned post-phase commits.
+   Spec Kit Phase Orchestrator will run tasks.md one phase at a time with
+   isolated worker handoffs, focused validation, Markdown execution documents,
+   and parent-owned post-phase commits.
    ```
 
 ### Supported Command Behavior
@@ -404,8 +397,8 @@ completed even when later release work refines their outputs.
 
 1. **Status: In progress** — Commit the already prepared documentation updates
    recording successful Codex, Claude Code, and Cursor testing.
-2. **Status: Not started** — Replace the manifest description with the approved
-   concise description.
+2. **Status: Completed on 2026-08-03** — Replaced the manifest description with
+   the approved canonical description.
 3. **Status: Not started** — Update the command description where a shorter
    integration-facing summary improves discoverability.
 4. **Status: Not started** — Set the manifest version to `1.0.1` immediately
@@ -552,7 +545,7 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 2. **Status: Approved** — Extension Name: `Phase Orchestrator`.
 3. **Status: Approved** — Version: `1.0.1`.
 4. **Status: Approved** — Description:
-   `Run Spec Kit tasks.md phase-by-phase with isolated workers and validation gates.`
+   `Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits.`
 5. **Status: Approved** — Author: `awasali14`.
 6. **Status: Approved** — Repository:
    `https://github.com/awasali14/spec-kit-phase-orchestrator`.
@@ -627,7 +620,7 @@ before submission:
   "phase-orchestrator": {
     "name": "Phase Orchestrator",
     "id": "phase-orchestrator",
-    "description": "Run Spec Kit tasks.md phase-by-phase with isolated workers and validation gates.",
+    "description": "Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits.",
     "author": "awasali14",
     "version": "1.0.1",
     "download_url": "https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.1.zip",
@@ -717,3 +710,167 @@ before submission:
 6. **Status: Completed on 2026-08-03; recheck before submission** — Contribution
    guide:
    `https://github.com/github/spec-kit/blob/main/CONTRIBUTING.md`.
+
+## 14. Execution Order And Progress Tracker
+
+This is the only section to execute as a checklist. Sections 1–13 define the
+decisions, requirements, evidence, and detailed acceptance checks used by this
+checklist; do not treat their topic-based lists as separate execution queues.
+
+Tracking rules:
+
+1. Work from top to bottom and keep only one stage **In progress** at a time.
+2. Do not start a later stage until the current stage's exit condition is met.
+3. After completing a stage, update its status here to **Completed**, add the
+   completion date and concise evidence, and update any affected detail statuses
+   in Sections 1–13 in the same change.
+4. If work cannot proceed, mark the current stage **Blocked**, record the exact
+   blocker here, and do not skip ahead unless this plan is explicitly revised.
+5. Continue updating this file through catalog acceptance so it remains the
+   ground-truth progress record.
+
+### Stage 1 — Commit The Current Documentation Baseline
+
+**Status: In progress**
+
+Review the prepared Codex, Claude Code, and Cursor documentation changes
+together with this publication plan, commit the intentional changes on `dev`,
+and push `dev`.
+
+**Exit condition:** The current documentation work is committed, reproducible
+from `origin/dev`, and the working tree contains no unexplained changes.
+
+### Stage 2 — Complete Public Examples And Documentation
+
+**Status: Not started**
+
+Make `docs/examples.md` self-contained, add every required invocation and
+result example, and update README and public-documentation links so
+`docs/examples.md` is the sole examples destination.
+
+**Exit condition:** A user or agent can understand every supported mode without
+the repository-only `examples/` fixtures.
+
+### Stage 3 — Finalize Runtime And Packaging Contracts
+
+**Status: Not started**
+
+Update the command description if needed, mark Git required in `extension.yml`,
+and add all approved development-only paths to `.extensionignore`.
+
+**Exit condition:** The manifest, command, repository-source contract, and
+installed-payload contract agree.
+
+### Stage 4 — Verify Integration Behavior And Guidance
+
+**Status: Not started**
+
+Test registration and switching with Spec Kit 0.13.0, then reconcile README and
+`docs/agent-support.md`. Retain remove-and-reinstall instructions only as a
+verified fallback.
+
+**Exit condition:** The documented primary and fallback integration flows match
+observed CLI behavior.
+
+### Stage 5 — Run Pre-Release Verification On `dev`
+
+**Status: Not started**
+
+Run unit tests, parser smoke and failure-path tests, manifest validation, a
+clean development installation, and an exact installed-payload inspection.
+
+**Exit condition:** All checks pass and the installed copy contains only the
+files allowed by Section 4.
+
+### Stage 6 — Run The Compatibility And Agent Matrix
+
+**Status: Not started**
+
+Re-test Codex, Claude Code, and Cursor. Cover the default commit path,
+`--no-commit`, and a blocked or failed `all` run. Re-test Spec Kit 0.8.7 or
+raise the declared minimum to the oldest version actually verified.
+
+**Exit condition:** Recorded evidence supports every declared agent, command
+mode, tool requirement, and minimum version.
+
+### Stage 7 — Finalize The `v1.0.1` Release Candidate
+
+**Status: Not started**
+
+Set the manifest version to `1.0.1`, add the final changelog entry, update
+submission notes with all evidence available before publication, check version
+and description consistency, and perform the security and secret review.
+Commit and push the complete release candidate on `dev`.
+
+**Exit condition:** `origin/dev` contains the intended release contents and all
+pre-tag verification is green. Do not yet change README installation
+instructions to claim that the `v1.0.1` archive exists.
+
+### Stage 8 — Promote And Verify The Release Commit
+
+**Status: Not started**
+
+Fast-forward local `main` from `origin/main`, merge `dev` into `main`, and run
+the complete release verification suite on the resulting `main` commit.
+
+**Exit condition:** The exact commit to be tagged passes every applicable check
+in Section 9 with no unexplained working-tree changes.
+
+### Stage 9 — Tag And Publish `v1.0.1`
+
+**Status: Not started**
+
+Create the annotated tag from the verified `main` commit, push `main` and the
+tag, and publish the GitHub release using `CHANGELOG.md`.
+
+**Exit condition:** The remote tag and GitHub release both exist and resolve to
+the verified commit.
+
+### Stage 10 — Verify The Immutable Release Archive
+
+**Status: Not started**
+
+Download the real `v1.0.1` tag archive, install it into a clean Spec Kit
+project, inspect the installed payload, confirm the enabled version and
+registered command, and run a real command from that installation.
+
+**Exit condition:** Every Release Archive check in Section 9 passes. If the
+archive has a release-blocking defect, do not move the tag; fix it through
+`dev` and publish a new patch version.
+
+### Stage 11 — Publish Verified Post-Release Documentation
+
+**Status: Not started**
+
+Only after the archive is verified, update README installation instructions to
+the real `v1.0.1` URL and finish `docs/submission-notes.md` with the exact
+release and test results. Make these documentation-only changes on `dev`, merge
+them into `main`, and push both branches as applicable.
+
+**Exit condition:** The public default branch and submission record point to
+the verified artifact. These are intentionally post-tag documentation commits;
+any runtime or installed-payload change requires a new patch release.
+
+### Stage 12 — Submit To The Community Catalog
+
+**Status: Not started**
+
+Recheck every official source in Section 13, confirm the current issue template
+and submission requirements, replace all provisional dates or version values,
+and open the Extension Submission issue using the approved metadata and AI
+disclosure.
+
+**Exit condition:** The submitted issue contains only values supported by the
+verified `v1.0.1` release evidence.
+
+### Stage 13 — Handle Review Through Acceptance
+
+**Status: Not started**
+
+Monitor the issue, answer maintainer feedback, route artifact changes through
+`dev` and a new patch release when necessary, then verify catalog discovery and
+update installation guidance after acceptance.
+
+**Exit condition:** The extension is accepted, discoverable through
+`specify extension search`, and the public installation guidance reflects the
+catalog workflow.
