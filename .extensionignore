@@ -1,7 +1,15 @@
 .git/
 .gitignore
+.github/
+.agents/
+.codex/
+.tools/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+tests/
+examples/
+schemas/
+docs/submission-notes.md
 speckit-phase-orchestrator-extension-publication-plan.md
 git-branch-plan.md

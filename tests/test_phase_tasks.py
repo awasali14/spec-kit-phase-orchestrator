@@ -354,9 +354,9 @@ class PhaseTasksParserTest(unittest.TestCase):
         extension_text = EXTENSION_FILE.read_text(encoding="utf-8")
         expected_description = (
             "Use /speckit.phase-orchestrator.phase or "
-            "$speckit-phase-orchestrator-phase to orchestrate Spec Kit tasks.md "
-            "execution phase-by-phase with isolated worker handoffs, validation, "
-            "documentation, and optional commits."
+            "$speckit-phase-orchestrator-phase to run Spec Kit tasks.md one phase "
+            "at a time with isolated workers, validation, docs, and parent-owned "
+            "commits."
         )
 
         self.assertIn(f'description: "{expected_description}"', command_text)

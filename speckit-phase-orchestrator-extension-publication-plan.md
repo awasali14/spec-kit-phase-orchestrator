@@ -1,6 +1,6 @@
 # Spec Kit Phase Orchestrator Extension Publication Plan
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 ## 1. Document Authority
 
@@ -121,8 +121,8 @@ versions are canonical:
 8. **Status: Completed** — Detailed usage guide: `docs/usage.md`.
 9. **Status: Completed** — Agent compatibility guide:
    `docs/agent-support.md`.
-10. **Status: In progress** — Sole installed examples and use-cases document:
-    `docs/examples.md`.
+10. **Status: Completed on 2026-08-04** — Sole installed examples and use-cases
+    document: `docs/examples.md`.
 11. **Status: Completed** — Submission working record:
     `docs/submission-notes.md`.
 12. **Status: Completed** — License: `LICENSE`.
@@ -141,8 +141,8 @@ clone on another computer contains everything needed to continue development.
    until they are intentionally retired in a separate reviewed change.
 4. **Status: Completed** — Keep `docs/submission-notes.md` in Git until catalog
    submission is complete.
-5. **Status: In progress** — Track this publication plan in Git. It has been
-   removed from `.gitignore` and staged; commit and push are still pending.
+5. **Status: Completed on 2026-08-04** — Track this publication plan in Git.
+   Commit `efa5a59` is present on both local and remote `dev`.
 6. **Status: Completed** — Keep `git-branch-plan.md` local-only unless a future
    decision explicitly makes it public.
 
@@ -162,45 +162,48 @@ Files and directories that must remain in the installed payload:
 7. **Status: Completed** — `CHANGELOG.md`.
 8. **Status: Completed** — `docs/usage.md`.
 9. **Status: Completed** — `docs/agent-support.md`.
-10. **Status: In progress** — `docs/examples.md` as the only installed examples
-    and use-cases artifact.
+10. **Status: Completed on 2026-08-04** — `docs/examples.md` as the only
+    installed examples and use-cases artifact.
 
 Files and directories that must be excluded by `.extensionignore` while
 remaining available in the Git repository:
 
-1. **Status: Not started** — Add `tests/`.
-2. **Status: Not started** — Add `examples/` after `docs/examples.md` is made
-   self-contained.
-3. **Status: Not started** — Add `schemas/` because the current command and
-   parser do not consume the schema at runtime.
-4. **Status: Not started** — Add `docs/submission-notes.md`.
+1. **Status: Completed on 2026-08-04** — Added `tests/`.
+2. **Status: Completed on 2026-08-04** — Added `examples/` after
+   `docs/examples.md` was made self-contained.
+3. **Status: Completed on 2026-08-04** — Added `schemas/` because the current
+   command and parser do not consume the schema at runtime.
+4. **Status: Completed on 2026-08-04** — Added `docs/submission-notes.md`.
 5. **Status: Completed** — Exclude this publication plan.
 6. **Status: Completed** — Exclude `git-branch-plan.md`.
 7. **Status: Completed** — Exclude `.git/` and `.gitignore`.
 8. **Status: Completed** — Exclude Python bytecode and cache directories.
-9. **Status: Not started** — Add `.github/`, `.agents/`, `.codex/`, and
-   `.tools/` as defensive development-install exclusions. These paths are not
-   currently part of the tagged Git source archive, but local `--dev`
-   installation must not copy them if they exist.
+9. **Status: Completed on 2026-08-04** — Added `.github/`, `.agents/`,
+   `.codex/`, and `.tools/` as defensive development-install exclusions. These
+   paths are not currently part of the tagged Git source archive, but local
+   `--dev` installation must not copy them if they exist.
 
 ### Single Examples Document
 
 `docs/examples.md` must be understandable by both users and AI coding agents
 without requiring files from the excluded `examples/` directory.
 
-1. **Status: Not started** — Explain when to use `next`, explicit `phase`, and
-   `all` modes.
-2. **Status: Not started** — Include slash-command invocation for compatible
-   agents and the Codex `$speckit-phase-orchestrator-phase` invocation.
-3. **Status: Not started** — Include `--docs-dir` and `--no-commit` examples.
-4. **Status: Not started** — Include a compact but realistic `tasks.md` sample.
-5. **Status: Not started** — Include representative parser output.
-6. **Status: Not started** — Include a representative selected-phase worker
-   handoff.
-7. **Status: Not started** — Show expected validation, Markdown documentation,
-   and parent-commit results.
-8. **Status: Not started** — Update README and other public documentation to
-   link only to `docs/examples.md` for examples.
+1. **Status: Completed on 2026-08-04** — Explained when to use `next`, explicit
+   `phase`, and `all` modes.
+2. **Status: Completed on 2026-08-04** — Included slash-command invocation for
+   compatible agents and the Codex `$speckit-phase-orchestrator-phase`
+   invocation.
+3. **Status: Completed on 2026-08-04** — Included `--docs-dir` and
+   `--no-commit` examples.
+4. **Status: Completed on 2026-08-04** — Included a compact but realistic
+   `tasks.md` sample.
+5. **Status: Completed on 2026-08-04** — Included representative parser output.
+6. **Status: Completed on 2026-08-04** — Included a representative
+   selected-phase worker handoff.
+7. **Status: Completed on 2026-08-04** — Showed expected validation, Markdown
+   documentation, and parent-commit results.
+8. **Status: Completed on 2026-08-04** — Updated README and other public
+   documentation to link only to `docs/examples.md` for examples.
 
 ### Source Archive Versus Installed Copy
 
@@ -279,11 +282,10 @@ release-only changes back to `dev`.
 
 ### Git
 
-1. **Status: In progress** — The manifest currently marks Git optional, but the
-   default workflow uses Git status, diff, staging, and commit operations.
-2. **Status: Approved; implementation not started** — Mark Git as required in
-   `extension.yml` unless the command is explicitly redesigned and tested to
-   work outside a Git repository.
+1. **Status: Completed on 2026-08-04** — The manifest marks Git required because
+   the default workflow uses Git status, diff, staging, and commit operations.
+2. **Status: Completed on 2026-08-04** — Marked Git as required in
+   `extension.yml`.
 
 ## 7. Completed Implementation History
 
@@ -395,12 +397,13 @@ completed even when later release work refines their outputs.
 
 ### Documentation And Metadata
 
-1. **Status: In progress** — Commit the already prepared documentation updates
-   recording successful Codex, Claude Code, and Cursor testing.
+1. **Status: Completed on 2026-08-04** — Committed and pushed the prepared
+   documentation updates recording successful Codex, Claude Code, and Cursor
+   testing.
 2. **Status: Completed on 2026-08-03** — Replaced the manifest description with
    the approved canonical description.
-3. **Status: Not started** — Update the command description where a shorter
-   integration-facing summary improves discoverability.
+3. **Status: Completed on 2026-08-04** — Updated the command description with a
+   shorter integration-facing summary that preserves discoverability.
 4. **Status: Not started** — Set the manifest version to `1.0.1` immediately
    before the release candidate is finalized.
 5. **Status: Not started** — Add a `1.0.1` changelog entry containing the final
@@ -412,9 +415,9 @@ completed even when later release work refines their outputs.
 
 ### Packaging
 
-1. **Status: Not started** — Make `docs/examples.md` self-contained.
-2. **Status: Not started** — Add the approved development-only exclusions to
-   `.extensionignore`.
+1. **Status: Completed on 2026-08-04** — Made `docs/examples.md` self-contained.
+2. **Status: Completed on 2026-08-04** — Added the approved development-only
+   exclusions to `.extensionignore`.
 3. **Status: Not started** — Simulate a development install and list the exact
    installed payload.
 4. **Status: Not started** — Confirm the installed payload contains no tests,
@@ -561,7 +564,7 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 12. **Status: In progress** — Required Spec Kit version: `>=0.8.7`, pending the
     final minimum-version compatibility test.
 13. **Status: Approved** — Required Python version: `>=3.10`.
-14. **Status: Approved; implementation not started** — Git is required.
+14. **Status: Completed on 2026-08-04** — Git is required in `extension.yml`.
 15. **Status: Approved** — Number of commands: `1`.
 16. **Status: Approved** — Number of hooks: `0`.
 17. **Status: Approved** — Command:
@@ -731,7 +734,7 @@ Tracking rules:
 
 ### Stage 1 — Commit The Current Documentation Baseline
 
-**Status: In progress**
+**Status: Completed on 2026-08-04**
 
 Review the prepared Codex, Claude Code, and Cursor documentation changes
 together with this publication plan, commit the intentional changes on `dev`,
@@ -740,9 +743,12 @@ and push `dev`.
 **Exit condition:** The current documentation work is committed, reproducible
 from `origin/dev`, and the working tree contains no unexplained changes.
 
+**Evidence:** Local `dev` and `origin/dev` both pointed to documentation commit
+`efa5a59`, and the working tree was clean before Stage 2 began.
+
 ### Stage 2 — Complete Public Examples And Documentation
 
-**Status: Not started**
+**Status: Completed on 2026-08-04**
 
 Make `docs/examples.md` self-contained, add every required invocation and
 result example, and update README and public-documentation links so
@@ -751,15 +757,26 @@ result example, and update README and public-documentation links so
 **Exit condition:** A user or agent can understand every supported mode without
 the repository-only `examples/` fixtures.
 
+**Evidence:** `docs/examples.md` now contains mode guidance, slash-command and
+Codex invocations, a copyable `tasks.md`, representative parser output, a
+sanitized worker handoff, and expected validation, documentation, commit, and
+failure results. README and usage documentation point to this single examples
+document.
+
 ### Stage 3 — Finalize Runtime And Packaging Contracts
 
-**Status: Not started**
+**Status: Completed on 2026-08-04**
 
 Update the command description if needed, mark Git required in `extension.yml`,
 and add all approved development-only paths to `.extensionignore`.
 
 **Exit condition:** The manifest, command, repository-source contract, and
 installed-payload contract agree.
+
+**Evidence:** The manifest and command use the same concise description, Git is
+required, and `.extensionignore` excludes tests, fixtures, schemas, submission
+notes, GitHub/workspace metadata, caches, and local planning files. All 24 unit
+tests and targeted manifest/frontmatter/packaging consistency checks passed.
 
 ### Stage 4 — Verify Integration Behavior And Guidance
 

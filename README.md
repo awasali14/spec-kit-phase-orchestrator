@@ -174,11 +174,9 @@ Supporting scripts and reference templates remain under
 
 ## Examples
 
-See:
-
-1. `examples/sample-tasks.md`
-2. `examples/sample-phase-handoff.json`
-3. `docs/examples.md`
+See [`docs/examples.md`](docs/examples.md) for the self-contained command,
+`tasks.md`, parser-output, worker-handoff, validation, documentation, and
+commit examples.
 
 ## Testing
 

@@ -39,9 +39,9 @@ review.
 The supporting parser can be run directly:
 
 ```bash
-python3 scripts/phase_tasks.py examples/sample-tasks.md --mode next --json
-python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --json
-python3 scripts/phase_tasks.py examples/sample-tasks.md --mode all --json
+python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --mode next --json
+python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --phase 3 --json
+python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --mode all --json
 ```
 
 The JSON output includes the selected phase, incomplete task IDs, test tasks,
@@ -57,8 +57,11 @@ Documentation/{feature-slug}/phase-{number}-{phase-slug}-execution.md
 Use `--docs-dir <directory>` to override the generated directory:
 
 ```bash
-python3 scripts/phase_tasks.py examples/sample-tasks.md --phase 3 --docs-dir Documentation/custom-feature --json
+python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --phase 3 --docs-dir Documentation/custom-feature --json
 ```
+
+See [`examples.md`](examples.md) for a copyable `tasks.md`, representative
+parser output, and an end-to-end worker handoff and result.
 
 ## Post-Phase Commits
 
