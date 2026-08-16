@@ -5,11 +5,13 @@ The installed extension does not require the repository's development fixtures.
 
 ## Choose A Mode
 
-- Use `next` when you want the first phase with unchecked tasks.
+- Use `next` when you want the first workflow-incomplete phase. It also resumes
+  phases whose tasks are checked but whose final verified documentation is
+  incomplete.
 - Use `phase <number>` when you intentionally want one specific phase, even if
   an earlier phase is incomplete.
 - Use `all` when all remaining phases are well-defined and may run sequentially.
-  Each phase still gets its own worker, validation gate, document, and commit.
+  Each phase must pass all staged gates before the next phase starts.
 
 Prefer `next` or an explicit phase when requirements are unclear, the working
 tree needs review, or a phase may require a decision. In `all` mode, any blocker,
@@ -115,6 +117,10 @@ Representative fields are:
     "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
     "documentation_path": "Documentation/application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
     "complete": false,
+    "task_complete": false,
+    "documentation_complete": false,
+    "workflow_complete": false,
+    "next_stage": "test",
     "incomplete_task_ids": ["T005", "T006", "T007", "T008"],
     "counts": {
       "total": 4,
@@ -136,66 +142,66 @@ Representative fields are:
 ```
 
 Adding `--docs-dir Documentation/custom-feature` changes only the generated
-document directory. In `all` mode, `selected_phases` contains the remaining
-phase queue, but the parent still hands off only one selected phase at a time.
+document directory. An explicit Markdown path overrides that default. In
+`all` mode, `selected_phases` is workflow-aware, but the parent still completes
+every gate for one phase before starting the next.
 
-## Representative Worker Handoff
+## Representative Stage Handoffs
 
-The parent converts the parser result into a sanitized, single-phase prompt.
-A shortened Phase 3 handoff looks like this:
+The parent records the baseline, then converts the parser result into compact,
+role-specific handoffs. A shortened test handoff looks like this:
 
 ```text
-You are a sequential Spec Kit phase worker for this repository.
+Stage: test
+Selected phase: Phase 3
+Assigned task IDs: T005, T006
+Relevant paths: tasks.md and the two assigned test paths
+Prior SHA: <sha>
 
-Tasks file: specs/002-application-document-workspace/tasks.md
-Mode: phase
-Selected phase: Phase 3: User Story 1 - Start Or Resume A Package (Priority: P1)
-Independent test: A user can start or resume a saved document package.
-
-Assigned incomplete task IDs:
-T005, T006, T007, T008
-
-Tests-first tasks:
-- T005 Add the route integration test.
-- T006 Add the entry hook test.
-
-Implementation/setup tasks:
-- T007 Add the entry hook.
-- T008 Add the protected route.
-
-Official implementation workflow/skill:
-Use /speckit.implement or $speckit-implement for implementation discipline and
-task tracking. Keep its use scoped to Phase 3 only.
-
-Documentation:
-- Write the Markdown phase execution document to:
-  Documentation/application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md
-- Use the installed phase document and Mermaid style references.
-
-Do not run the phase orchestrator, spawn workers, work on another phase, stage,
-commit, or push. Stop after Phase 3 and report validation and changed files.
+Implement only the assigned test tasks. Mark their checkboxes only after the
+test gate. An intentional RED is eligible only when missing assigned
+implementation explains the failure. Stop on syntax, collection, fixture,
+infrastructure, or unrelated failures.
 ```
 
-The actual handoff retains full task text, validation expectations, relevant
-skills, and applicable tool notes. It excludes parent model settings, the
-`all`-mode queue, worker-spawn instructions, and post-phase Git actions.
+After the parent reviews and, by default, commits eligible test changes, the
+implementation handoff contains `T007`, `T008`, relevant paths, the prior SHA,
+test manifest, validation summary, and expected RED. It instructs the agent to
+inspect committed tests directly and requires focused validation to pass.
+
+The verifier receives only the phase scope, manifests, SHAs, and validation
+summaries. It must remain read-only and return structured focused,
+independent-phase, and suitable regression results. On failure, remediation
+receives the findings and attempt number; a fresh verifier checks the result.
+After two failed remediation/re-verification cycles, the workflow stops with
+failed changes uncommitted.
+
+Only the documentation handoff contains the execution-document and Mermaid
+instructions. Every worker is forbidden to stage, commit, push, spawn workers,
+run the orchestrator, or cross phase boundaries. The official
+`/speckit.implement` or `$speckit-implement` workflow remains unchanged and is
+routed only where relevant.
 
 ## Expected Results
 
-After the worker completes Phase 3 successfully:
+After the staged workflow completes Phase 3 successfully:
 
 1. `T005`–`T008` are checked in `tasks.md` only after focused validation.
 2. Focused tests are reported with their exact commands and results, for
    example `npm test -- applicationDocumentWorkspaceRoute` — passed.
-3. The resolved Markdown execution document exists and records task IDs,
-   changed files, validation, caveats, and the required styled Mermaid flow.
-4. The parent re-runs the parser, reviews `git status --short` and the diff,
-   and confirms the phase and documentation gates.
-5. By default, the parent stages only Phase 3 files and creates one Conventional
-   Commit such as `feat(workspace): complete phase 3 entry flow`.
-6. With `--no-commit`, the same gates run, but files remain unstaged and no
-   commit is created. The orchestrator never pushes in either case.
+3. A fresh read-only verifier passes focused, independent-phase, and suitable
+   regression validation.
+4. The resolved Markdown execution document records aggregate stage reports,
+   exact-path manifests, SHAs, validation, caveats, remediation history, the
+   required styled Mermaid flow, and
+   `<!-- phase-orchestrator:workflow-complete v2 -->`.
+5. By default, the parent creates only eligible exact-path stage commits, for
+   example test coverage, green implementation, and final documentation.
+6. With `--no-commit`, the same stages and gates run with per-stage manifests,
+   but accumulated reviewed changes remain unstaged and uncommitted.
 
-If focused validation fails, the documentation is missing, or unrelated work
-is mixed into a required file, the parent reports the issue and stops. In
-`all` mode, no later phase starts after that failure.
+Empty test or implementation stages are skipped; fresh verification and
+documentation are never skipped. Unsafe RED failures, a third remediation
+need, missing final documentation, generated/unrelated artifacts, or overlap
+with a pre-existing dirty file stop the workflow. In `all` mode, no later
+phase starts after that failure.

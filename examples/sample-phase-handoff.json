@@ -1,5 +1,6 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0.0",
+  "stage": "test",
   "tasks_path": "examples/sample-tasks.md",
   "mode": "phase",
   "phase": {
@@ -7,103 +8,68 @@
     "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
     "slug": "user-story-1-start-or-resume-a-package-priority-p1",
     "purpose": null,
+    "checkpoint": null,
     "independent_test": "A user can open a saved scholarship and start or resume a document package.",
-    "complete": false,
-    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md"
+    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+    "task_complete": false,
+    "documentation_complete": false,
+    "workflow_complete": false,
+    "next_stage": "test"
   },
-  "assigned_task_ids": ["T007", "T008", "T009", "T010", "T011"],
-  "test_tasks": [
+  "assigned_task_ids": ["T007", "T008"],
+  "prior": {
+    "commit_sha": "2cbcafae60394499ed4f01e88c11932e22d4798c",
+    "manifest": [],
+    "validation": []
+  },
+  "expected_failures": [
     {
-      "id": "T007",
-      "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`",
-      "completed": false,
-      "parallel": true,
-      "story": "US1",
-      "section": "Tests for Phase 3",
-      "line": 29
-    },
-    {
-      "id": "T008",
-      "text": "[P] [US1] Add start/resume hook test in `tests/unit/hooks/useApplicationDocumentEntry.test.js`",
-      "completed": false,
-      "parallel": true,
-      "story": "US1",
-      "section": "Tests for Phase 3",
-      "line": 30
+      "summary": "The entry route is not implemented until T009 and T010 run.",
+      "related_task_ids": ["T009", "T010"],
+      "attributable_to_missing_implementation": true
     }
   ],
-  "tests_first_tasks": [
-    {
-      "id": "T007",
-      "text": "[P] [US1] Add route integration test in `tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx`",
-      "completed": false,
-      "parallel": true,
-      "story": "US1",
-      "section": "Tests for Phase 3",
-      "line": 29
-    },
-    {
-      "id": "T008",
-      "text": "[P] [US1] Add start/resume hook test in `tests/unit/hooks/useApplicationDocumentEntry.test.js`",
-      "completed": false,
-      "parallel": true,
-      "story": "US1",
-      "section": "Tests for Phase 3",
-      "line": 30
-    }
-  ],
-  "implementation_tasks": [
-    {
-      "id": "T009",
-      "text": "[US1] Add workspace entry hook in `src/hooks/applicationDocuments/useApplicationDocumentEntry.js`",
-      "completed": false,
-      "parallel": false,
-      "story": "US1",
-      "section": "Implementation for Phase 3",
-      "line": 34
-    },
-    {
-      "id": "T010",
-      "text": "[US1] Add protected workspace route in `src/App.jsx`",
-      "completed": false,
-      "parallel": false,
-      "story": "US1",
-      "section": "Implementation for Phase 3",
-      "line": 35
-    },
-    {
-      "id": "T011",
-      "text": "[US1] Add saved scholarship apply button in `src/pages/SavedScholarshipApplyPage.jsx`",
-      "completed": false,
-      "parallel": false,
-      "story": "US1",
-      "section": "Implementation for Phase 3",
-      "line": 36
-    }
-  ],
-  "scope_rules": [
-    "Execute only Phase 3 tasks.",
-    "Do not replace, bypass, or modify the official /speckit.implement command.",
-    "Keep the handoff boundary to Phase 3 only, even when the tasks file has five or more phases.",
-    "Mark completed task checkboxes as [X] only after validation supports completion.",
-    "Do not stage or commit any files."
-  ],
+  "remediation_attempt": 0,
+  "scope": {
+    "phase_number": 3,
+    "relevant_paths": [
+      "examples/sample-tasks.md",
+      "tests/integration/applicationDocumentWorkspaceRoute.integration.test.jsx",
+      "tests/unit/hooks/useApplicationDocumentEntry.test.js"
+    ],
+    "protected_paths": ["README.md"],
+    "read_only": false,
+    "forbidden_actions": [
+      "stage",
+      "commit",
+      "push",
+      "spawn",
+      "run_orchestrator",
+      "cross_phase"
+    ]
+  },
   "validation": {
     "expectations": [
-      "Run focused tests for the route, entry hook, and saved scholarship apply path.",
-      "If full validation is not feasible, record the closest targeted validation and the gap."
+      "Collect and run focused Phase 3 tests.",
+      "Allow RED only for missing T009-T011 implementation."
     ],
-    "suggested_commands": [
-      "npm test -- applicationDocumentWorkspaceRoute",
-      "npm test -- useApplicationDocumentEntry"
-    ]
+    "results": [
+      {
+        "kind": "focused",
+        "command": "npm test -- applicationDocumentWorkspaceRoute useApplicationDocumentEntry",
+        "status": "expected_red",
+        "summary": "Both tests ran and failed only because the assigned production entry flow is absent."
+      }
+    ],
+    "verdict": "expected_red"
   },
-  "documentation": {
-    "phase_doc_required": true,
-    "phase_doc_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
+  "commit_eligibility": {
+    "eligible": true,
+    "change_kind": "test",
     "requirements": [
-      "Summarize completed tasks, modified or added/created files, validation, and issues.",
-      "Include a required styled Phase Flow Mermaid diagram using the provided Mermaid reference unless the user explicitly asked to omit diagrams."
-    ]
+      "Exact manifest contains only assigned tests and task checkboxes.",
+      "Expected RED is attributable only to missing assigned implementation."
+    ],
+    "no_commit": false
   }
 }

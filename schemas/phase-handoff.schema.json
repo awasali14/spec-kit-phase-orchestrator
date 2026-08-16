@@ -1,199 +1,287 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-handoff.schema.json",
-  "title": "Spec Kit Phase Handoff",
-  "description": "Information passed to an isolated worker for one phase-scoped Spec Kit implementation run.",
+  "title": "Spec Kit Phase Stage Handoff",
+  "description": "Compact context passed to one isolated stage agent in the Phase Orchestrator 2.0 workflow.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "stage",
     "tasks_path",
     "mode",
     "phase",
     "assigned_task_ids",
-    "scope_rules",
+    "prior",
+    "expected_failures",
+    "remediation_attempt",
+    "scope",
     "validation",
-    "documentation"
+    "commit_eligibility"
   ],
   "properties": {
     "schema_version": {
-      "type": "string",
-      "const": "1.0"
+      "const": "2.0.0"
+    },
+    "stage": {
+      "enum": ["test", "implementation", "verification", "remediation", "documentation"]
     },
     "tasks_path": {
       "type": "string",
       "minLength": 1
     },
     "mode": {
-      "type": "string",
       "enum": ["next", "phase", "all"]
     },
     "phase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["number", "title", "complete"],
+      "required": [
+        "number",
+        "title",
+        "slug",
+        "task_complete",
+        "documentation_complete",
+        "workflow_complete",
+        "next_stage"
+      ],
       "properties": {
-        "number": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "slug": {
-          "type": "string"
-        },
-        "purpose": {
-          "type": ["string", "null"]
-        },
-        "independent_test": {
-          "type": ["string", "null"]
-        },
-        "complete": {
-          "type": "boolean"
-        },
-        "documentation_path": {
-          "type": "string"
+        "number": {"type": "integer", "minimum": 1},
+        "title": {"type": "string", "minLength": 1},
+        "slug": {"type": "string", "minLength": 1},
+        "purpose": {"type": ["string", "null"]},
+        "checkpoint": {"type": ["string", "null"]},
+        "independent_test": {"type": ["string", "null"]},
+        "documentation_path": {"type": "string", "minLength": 1},
+        "task_complete": {"type": "boolean"},
+        "documentation_complete": {"type": "boolean"},
+        "workflow_complete": {"type": "boolean"},
+        "next_stage": {
+          "type": ["string", "null"],
+          "enum": ["test", "implementation", "verification", null]
         }
       }
     },
     "assigned_task_ids": {
       "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^T[0-9]+$"
-      },
-      "minItems": 1,
+      "items": {"type": "string", "pattern": "^T[0-9]+$"},
       "uniqueItems": true
     },
-    "test_tasks": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/task"
-      },
-      "default": []
+    "prior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit_sha", "manifest", "validation"],
+      "properties": {
+        "commit_sha": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{7,64}$"
+        },
+        "manifest": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/manifest_entry"}
+        },
+        "validation": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/validation_result"}
+        }
+      }
     },
-    "tests_first_tasks": {
+    "expected_failures": {
       "type": "array",
-      "items": {
-        "$ref": "#/$defs/task"
-      },
-      "default": []
+      "items": {"$ref": "#/$defs/expected_failure"}
     },
-    "implementation_tasks": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/task"
-      },
-      "default": []
+    "remediation_attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
     },
-    "scope_rules": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "minItems": 1
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase_number",
+        "relevant_paths",
+        "protected_paths",
+        "read_only",
+        "forbidden_actions"
+      ],
+      "properties": {
+        "phase_number": {"type": "integer", "minimum": 1},
+        "relevant_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "protected_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "read_only": {"type": "boolean"},
+        "forbidden_actions": {
+          "type": "array",
+          "items": {
+            "enum": ["stage", "commit", "push", "spawn", "run_orchestrator", "cross_phase"]
+          },
+          "minItems": 6,
+          "uniqueItems": true
+        }
+      }
     },
     "validation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectations"],
+      "required": ["expectations", "results", "verdict"],
       "properties": {
         "expectations": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "minItems": 1
+          "items": {"type": "string", "minLength": 1}
         },
-        "suggested_commands": {
+        "results": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "default": []
+          "items": {"$ref": "#/$defs/validation_result"}
+        },
+        "verdict": {
+          "enum": ["pending", "passed", "expected_red", "failed"]
         }
+      }
+    },
+    "commit_eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligible", "change_kind", "requirements", "no_commit"],
+      "properties": {
+        "eligible": {"type": "boolean"},
+        "change_kind": {
+          "enum": ["none", "test", "feat", "fix", "chore", "docs"]
+        },
+        "requirements": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "no_commit": {"type": "boolean"}
       }
     },
     "documentation": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "phase_doc_required",
-        "phase_doc_path"
-      ],
+      "required": ["path", "workflow_complete_marker", "mermaid_required"],
       "properties": {
-        "phase_doc_required": {
-          "type": "boolean"
+        "path": {"type": "string", "minLength": 1},
+        "workflow_complete_marker": {
+          "const": "<!-- phase-orchestrator:workflow-complete v2 -->"
         },
-        "phase_doc_path": {
-          "type": "string"
-        },
-        "requirements": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "default": []
-        }
-      }
-    },
-    "post_phase_commit": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "allowed": {
-          "type": "boolean"
-        },
-        "default": {
-          "type": "boolean"
-        },
-        "opt_out_flag": {
-          "type": "string",
-          "const": "--no-commit"
-        },
-        "stage_unrelated_files": {
-          "type": "boolean",
-          "const": false
-        }
+        "mermaid_required": {"type": "boolean"}
       }
     }
   },
-  "$defs": {
-    "task": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["id", "text", "completed"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^T[0-9]+$"
-        },
-        "text": {
-          "type": "string",
-          "minLength": 1
-        },
-        "completed": {
-          "type": "boolean"
-        },
-        "parallel": {
-          "type": "boolean"
-        },
-        "story": {
-          "type": ["string", "null"]
-        },
-        "section": {
-          "type": "string"
-        },
-        "line": {
-          "type": "integer",
-          "minimum": 1
+  "allOf": [
+    {
+      "if": {"properties": {"stage": {"enum": ["test", "implementation"]}}},
+      "then": {"properties": {"assigned_task_ids": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}}},
+      "then": {
+        "properties": {
+          "scope": {"properties": {"read_only": {"const": true}}},
+          "remediation_attempt": {"maximum": 2},
+          "commit_eligibility": {
+            "properties": {
+              "eligible": {"const": false},
+              "change_kind": {"const": "none"}
+            }
+          }
         }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "remediation"}}},
+      "then": {
+        "properties": {
+          "remediation_attempt": {"minimum": 1, "maximum": 2},
+          "scope": {"properties": {"read_only": {"const": false}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {"const": "test"},
+          "validation": {"properties": {"verdict": {"const": "expected_red"}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "expected_failures": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "attributable_to_missing_implementation": {"const": true}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {"enum": ["implementation", "remediation"]},
+          "commit_eligibility": {"properties": {"eligible": {"const": true}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "validation": {"properties": {"verdict": {"const": "passed"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "documentation"}}},
+      "then": {
+        "required": ["documentation"],
+        "properties": {
+          "scope": {"properties": {"read_only": {"const": false}}},
+          "validation": {"properties": {"verdict": {"const": "passed"}}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "manifest_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "status": {"enum": ["added", "modified", "deleted", "renamed"]}
+      }
+    },
+    "validation_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "command", "status", "summary"],
+      "properties": {
+        "kind": {"enum": ["focused", "independent_phase", "regression"]},
+        "command": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "not_run", "expected_red"]},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "expected_failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "related_task_ids", "attributable_to_missing_implementation"],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1},
+        "related_task_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^T[0-9]+$"},
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "attributable_to_missing_implementation": {"type": "boolean"}
       }
     }
   }

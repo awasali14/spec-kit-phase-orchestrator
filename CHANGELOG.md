@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.0.0 - Unreleased
+
+### Changed
+
+1. Replaced the single phase worker with sequential, context-isolated test,
+   implementation, verification, conditional remediation and re-verification,
+   and documentation stages.
+2. Added stage-specific parent-owned commit gates, exact-path staging, dirty
+   baseline protection, and manifest tracking for `--no-commit` runs.
+3. Made verification independent and read-only, limited remediation to two
+   attempts, and required fresh verification before documentation.
+4. Added workflow-completion and next-stage parser state so checked phases with
+   missing verified documentation resume safely.
+5. Upgraded the phase handoff contract to v2 with stage, prior-state,
+   validation, expected-failure, scope, and commit-eligibility data.
+6. Added a durable workflow-complete phase-document marker and aggregate staged
+   execution record.
+
 ## 1.0.0 - 2026-06-03
 
 ### Added

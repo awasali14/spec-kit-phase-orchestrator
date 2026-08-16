@@ -13,36 +13,63 @@ Manual extension testing has been completed successfully with:
 3. Cursor
 
 These checks verify the extension on the three integrations above. Other
-integrations still need subagent or isolated-worker support to run the command.
+integrations still need sequential isolated-agent support to run the command.
 
 ## Subagent-Capable Agents
 
-The command requires subagents or isolated worker contexts. It should use
-exactly one worker for the selected phase. That worker gets a compact handoff
-with the phase number, title, incomplete tasks, scope rules, validation
-expectations, and documentation requirements.
+The command requires subagents or isolated worker contexts. It launches one
+context-isolated stage agent at a time while sharing repository state:
 
-The worker should not stage, commit, spawn more workers, or continue to another
-phase. The parent context owns review, selected-file staging, post-phase
-commit creation, and continuation.
+1. Test, skipped when empty.
+2. Implementation, skipped when empty.
+3. Read-only verification, always run.
+4. Conditional remediation and fresh read-only re-verification, capped at two
+   cycles.
+5. Documentation, always run after final verification passes.
+
+Each later agent gets only a compact structured handoff: phase/task IDs,
+relevant paths, validation summaries, expected failures, prior SHA/manifest,
+scope, and remediation attempt when applicable. Do not pass full traces.
+
+Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
+or continue to another phase. The parent owns baselines, manifest review,
+exact-path staging, commits, remediation-cycle control, and continuation.
 
 Parent-only model and effort settings, fallback model-selection text, and
 orchestration instructions should stay with the parent. They are configuration
-for creating the worker, not phase work. The worker prompt should include only
-sanitized phase instructions plus relevant user-requested skills and concise
-reference summaries.
+for creating the worker, not phase work. Before building handoffs, the parent
+inspects the skills and MCP servers exposed by its integration. The worker
+prompt includes only sanitized phase instructions, applicable user-requested
+skills, automatically selected frontend/backend capabilities, MCP opt-outs,
+and concise reference summaries.
 
-In `all` mode, the parent owns the queue. It should spawn one selected-phase
-worker at a time, re-run the parser after each phase, confirm the Markdown
-phase document contains a Mermaid block unless the user opted out, review the
-phase diff, and keep `all` mode, continuation, staging, committing, and
-worker-spawn instructions out of the worker's executable prompt.
+Only the documentation agent receives the phase-document and Mermaid
+instructions. The test agent is test-only and may produce eligible intentional
+RED changes solely when missing assigned implementation explains the failure.
+Implementation and remediation must be green before their changes are commit
+eligible. Verifiers are strictly read-only.
 
-When an Exa or equivalent code-context/web MCP is available, its availability
-can be included in every worker prompt. Database-specific MCP notes should be
-included only when the selected phase tasks or skills indicate database-layer
-work such as database, Supabase, Postgres, SQL, migrations, RLS, grants, or
-storage policies.
+In `all` mode, the parent owns the queue. It completes every stage gate and
+confirms the durable workflow-complete documentation marker before starting
+the next phase. Keep `all` mode, queue management, Git actions, worker-spawn
+instructions, and full earlier traces out of worker prompts.
+
+Explicit user MCP opt-outs take precedence over capability defaults. A global
+opt-out disables every MCP; a provider-specific opt-out excludes only that
+provider. The parent propagates applicable exclusions to every worker.
+
+When web search is needed, both the parent and workers use Exa first when it is
+available and not excluded. If Exa is unavailable or fails, they may use
+another available web-search tool and report the fallback. This preference does
+not require web search for work that can be completed from repository context.
+
+For database-related work, the responsible agent identifies the project's
+database from the selected tasks and repository context, looks for an exposed
+related database MCP, and uses it when available and not excluded. The workflow
+does not hardcode a database provider and does not stop when no related MCP is
+available; it continues with suitable project tools. Frontend and backend
+skills and MCPs are selected automatically from the task scope, relevant paths,
+and detected project stack, then routed only to stages that need them.
 
 ## Unsupported Agents
 
@@ -104,21 +131,25 @@ Restart the coding agent after re-registering the extension.
 
 ## Commits
 
-Post-phase commits are parent-owned by default. After clean validation and
-documentation checks, the parent stages only selected-phase files and creates
-one Conventional Commit that records completed task IDs, changed files,
-validation, and Markdown documentation path.
+Per-stage commits are parent-owned by default. Before each stage, record HEAD
+and the working-tree baseline. After an eligible successful stage, review its
+manifest, reject unrelated/generated artifacts or overlap with pre-existing
+dirty files, and stage exact paths only. Commit bodies record stage, task IDs,
+files, validation, expected failures when applicable, and prior SHA. Verifiers
+never commit.
 
-If the user includes `--no-commit` or clearly says not to commit, the parent
-skips staging and commit creation and reports changed files for manual review.
-The orchestrator must never push; pushing is always user-owned.
+If the user includes `--no-commit` or clearly says not to commit, all stages
+and gates still run. The parent tracks per-stage manifests but suppresses every
+staging and commit operation, leaving accumulated reviewed changes unstaged. The
+orchestrator never pushes.
 
 ## Documentation Paths
 
-When no custom documentation location is provided, phase documentation and
-execution docs should use the parser-generated path under
-`Documentation/{feature-slug}/`. If the user provides a documentation directory
-or documentation path, use that location exactly.
+When no custom documentation location is provided, use the parser-generated
+path under `Documentation/{feature-slug}/`. Preserve `--docs-dir`, and use an
+explicit user-provided Markdown path exactly. The final document aggregates
+stage reports, SHAs, manifests, validation, remediation history, and the
+durable workflow-complete marker.
 
 ## Agent Requirements
 

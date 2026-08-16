@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: "phase-orchestrator"
   name: "Phase Orchestrator"
-  version: "1.0.0"
-  description: "Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits."
+  version: "2.0.0"
+  description: "Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates."
   author: "awasali14"
   repository: "https://github.com/awasali14/spec-kit-phase-orchestrator"
   homepage: "https://github.com/awasali14/spec-kit-phase-orchestrator"
@@ -23,7 +23,7 @@ provides:
   commands:
     - name: "speckit.phase-orchestrator.phase"
       file: "commands/speckit.phase-orchestrator.phase.md"
-      description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run Spec Kit tasks.md one phase at a time with isolated workers, validation, docs, and parent-owned commits."
+      description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run Spec Kit tasks.md through isolated test, implementation, verification, remediation, and documentation agents with parent-owned gated commits."
 
 tags:
   - "workflow"

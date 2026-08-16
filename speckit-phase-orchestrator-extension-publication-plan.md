@@ -1,6 +1,6 @@
 # Spec Kit Phase Orchestrator Extension Publication Plan
 
-Last updated: 2026-08-04
+Last updated: 2026-08-07
 
 ## 1. Document Authority
 
@@ -34,7 +34,7 @@ official documentation wins. Update this plan before continuing.
 4. **Status: Completed** — The extension was manually tested successfully with
    Codex, Claude Code, and Cursor.
 5. **Status: In progress** — Post-`v1.0.0` improvements are being prepared for
-   release as `v1.0.1`.
+   release as `v2.0.0`.
 6. **Status: Not started** — Spec Kit community extension submission.
 
 ## 2. Product Decisions
@@ -58,13 +58,13 @@ official documentation wins. Update this plan before continuing.
 
 ### Canonical Description
 
-1. **Status: Completed** — Use this description in
+1. **Status: Completed on 2026-08-07** — Use this description in
    `extension.yml`, submission metadata, and concise public summaries:
 
    ```text
-   Spec Kit Phase Orchestrator will run tasks.md one phase at a time with
-   isolated worker handoffs, focused validation, Markdown execution documents,
-   and parent-owned post-phase commits.
+   Orchestrate each Spec Kit tasks.md phase through isolated test,
+   implementation, verification, remediation, and documentation stages with
+   parent-owned Git gates.
    ```
 
 ### Supported Command Behavior
@@ -75,30 +75,35 @@ official documentation wins. Update this plan before continuing.
 4. **Status: Completed** — Support `--docs-dir <directory>`.
 5. **Status: Completed** — Honor an explicit Markdown documentation path given
    in natural language.
-6. **Status: Completed** — Create a parent-owned post-phase commit by default.
+6. **Status: Completed on 2026-08-07** — Create parent-owned stage commits after
+   each eligible successful test, implementation, remediation, and
+   documentation stage.
 7. **Status: Completed** — Support `--no-commit` and clear natural-language
    requests not to commit.
 8. **Status: Completed** — Never push to a remote. Pushing is user-owned.
-9. **Status: Completed** — Use exactly one selected-phase worker at a time.
+9. **Status: Completed on 2026-08-07** — Run context-isolated test,
+   implementation, read-only verification, conditional remediation and fresh
+   re-verification, and documentation agents sequentially for each phase.
 10. **Status: Completed** — Require subagents or isolated worker contexts. If
     they are unavailable, abort and explain the requirement. Do not execute the
     selected phase in the parent context.
 11. **Status: Completed** — In `next` and explicit `phase` modes, stop after the
     selected phase.
-12. **Status: Completed** — In `all` mode, continue sequentially only after the
-    current phase passes task, validation, documentation, and Git gates.
+12. **Status: Completed on 2026-08-07** — In `all` mode, continue sequentially only
+    after the current phase passes every stage, validation, documentation, and
+    Git gate and records workflow completion.
 13. **Status: Completed** — Stop after blockers, unresolved ambiguity,
     validation failure, missing documentation, or unsafe Git state.
 
 ### Phase Output Contract
 
-1. **Status: Completed** — The selected-phase worker writes one Markdown phase
-   execution document to the path resolved by the parent orchestrator.
-2. **Status: Completed** — The document records completed task IDs, changed
-   files, validation commands and results, issues or caveats, and a styled
-   Mermaid phase-flow diagram unless the user opts out.
-3. **Status: Completed** — The parent validates the document during the
-   post-phase gate.
+1. **Status: Completed on 2026-08-07** — Only the documentation agent writes the
+   Markdown phase execution document, after final verification passes.
+2. **Status: Completed on 2026-08-07** — The document aggregates stage reports,
+   task IDs, stage commit SHAs and manifests, validation, expected failures,
+   issues, and a styled Mermaid phase-flow diagram unless the user opts out.
+3. **Status: Completed on 2026-08-07** — The parent validates the document and its
+   durable workflow-complete marker before the documentation commit gate.
 4. **Status: Completed** — Separate phase receipt files are no longer part of
    the current product contract.
 
@@ -164,6 +169,8 @@ Files and directories that must remain in the installed payload:
 9. **Status: Completed** — `docs/agent-support.md`.
 10. **Status: Completed on 2026-08-04** — `docs/examples.md` as the only
     installed examples and use-cases artifact.
+11. **Status: Completed on 2026-08-07** — `schemas/phase-handoff.schema.json`,
+    because the v2 command consumes the handoff contract at runtime.
 
 Files and directories that must be excluded by `.extensionignore` while
 remaining available in the Git repository:
@@ -171,8 +178,9 @@ remaining available in the Git repository:
 1. **Status: Completed on 2026-08-04** — Added `tests/`.
 2. **Status: Completed on 2026-08-04** — Added `examples/` after
    `docs/examples.md` was made self-contained.
-3. **Status: Completed on 2026-08-04** — Added `schemas/` because the current
-   command and parser do not consume the schema at runtime.
+3. **Status: Completed historically; changed for v2.0.0** — `schemas/` was
+   excluded in v1, but the v2 runtime now requires the handoff schema and must
+   install it.
 4. **Status: Completed on 2026-08-04** — Added `docs/submission-notes.md`.
 5. **Status: Completed** — Exclude this publication plan.
 6. **Status: Completed** — Exclude `git-branch-plan.md`.
@@ -215,7 +223,7 @@ without requiring files from the excluded `examples/` directory.
    tag archive because the official installer applies `.extensionignore` when
    creating the installed extension copy.
 4. **Status: Not started** — Verify the exact installed payload from the final
-   `v1.0.1` tag archive before submission.
+   `v2.0.0` tag archive before submission.
 
 ## 5. Branch And Release Workflow
 
@@ -240,17 +248,17 @@ without requiring files from the excluded `examples/` directory.
 
 Use this order for every release:
 
-1. **Status: Not started for v1.0.1** — Finish and push tested work on `dev`.
-2. **Status: Not started for v1.0.1** — Switch to `main` and update it from
+1. **Status: Not started for v2.0.0** — Finish and push tested work on `dev`.
+2. **Status: Not started for v2.0.0** — Switch to `main` and update it from
    `origin/main` using `git pull --ff-only origin main`.
-3. **Status: Not started for v1.0.1** — Merge `dev` into `main`.
-4. **Status: Not started for v1.0.1** — Run the complete release verification
+3. **Status: Not started for v2.0.0** — Merge `dev` into `main`.
+4. **Status: Not started for v2.0.0** — Run the complete release verification
    suite on the exact `main` commit.
-5. **Status: Not started for v1.0.1** — Create annotated tag `v1.0.1` from the
+5. **Status: Not started for v2.0.0** — Create annotated tag `v2.0.0` from the
    verified `main` commit.
-6. **Status: Not started for v1.0.1** — Push `main` and `v1.0.1`.
-7. **Status: Not started for v1.0.1** — Publish the GitHub release.
-8. **Status: Not started for v1.0.1** — If `main` contains release-only commits
+6. **Status: Not started for v2.0.0** — Push `main` and `v2.0.0`.
+7. **Status: Not started for v2.0.0** — Publish the GitHub release.
+8. **Status: Not started for v2.0.0** — If `main` contains release-only commits
    not already in `dev`, merge `main` back into `dev` and push `dev`.
 9. **Status: Approved** — Never create a release tag before the release commit
    reaches `main`, and never treat a tag as a development branch to merge.
@@ -271,7 +279,7 @@ release-only changes back to `dev`.
 4. **Status: Completed** — The current development environment uses Spec Kit
    CLI 0.13.0.
 5. **Status: Not started** — Re-run the final compatibility suite against
-   0.8.7 after all `v1.0.1` changes. If this is not done, raise the declared
+   0.8.7 after all `v2.0.0` changes. If this is not done, raise the declared
    minimum to the oldest version actually verified for the release.
 
 ### Python
@@ -389,41 +397,38 @@ completed even when later release work refines their outputs.
 5. **Status: Completed on 2026-07-04** — Confirmed the tag archive URL resolves
    to a ZIP download.
 6. **Status: Completed on 2026-07-04** — Installed the archive into disposable
-   project `/tmp/speckit-phase-archive-test-20260704`.
+   disposable project.
 7. **Status: Completed on 2026-07-04** — Verified the installed extension was
    enabled and its Codex wrapper existed.
 
-## 8. Current v1.0.1 Work Plan
+## 8. Current v2.0.0 Work Plan
 
 ### Documentation And Metadata
 
-1. **Status: Completed on 2026-08-04** — Committed and pushed the prepared
-   documentation updates recording successful Codex, Claude Code, and Cursor
-   testing.
-2. **Status: Completed on 2026-08-03** — Replaced the manifest description with
-   the approved canonical description.
-3. **Status: Completed on 2026-08-04** — Updated the command description with a
-   shorter integration-facing summary that preserves discoverability.
-4. **Status: Not started** — Set the manifest version to `1.0.1` immediately
-   before the release candidate is finalized.
-5. **Status: Not started** — Add a `1.0.1` changelog entry containing the final
-   packaging, documentation, and orchestration changes.
-6. **Status: Not started** — Update README installation instructions to use the
-   real `v1.0.1` archive only after that tag exists and the archive is verified.
-7. **Status: Not started** — Update `docs/submission-notes.md` with the exact
-   final release and testing values.
+1. **Status: Completed on 2026-08-07** — Align public documentation with the staged-agent
+   architecture and workflow-completion resume behavior.
+2. **Status: Completed on 2026-08-07** — Use the approved concise v2.0.0 canonical and
+   integration-facing descriptions.
+3. **Status: Completed on 2026-08-05** — Set the manifest version to `2.0.0`
+   while retaining manifest schema version `1.0`.
+4. **Status: Completed on 2026-08-05** — Add an unreleased `2.0.0` changelog
+   entry covering the staged architecture and safety contract.
+5. **Status: Not started** — Update README installation instructions to use the
+   real `v2.0.0` archive only after that tag exists and the archive is verified.
+6. **Status: Completed on 2026-08-07** — Keep `docs/submission-notes.md` aligned
+   with the planned v2.0.0 metadata and record completed pre-release evidence.
 
 ### Packaging
 
 1. **Status: Completed on 2026-08-04** — Made `docs/examples.md` self-contained.
-2. **Status: Completed on 2026-08-04** — Added the approved development-only
-   exclusions to `.extensionignore`.
-3. **Status: Not started** — Simulate a development install and list the exact
+2. **Status: Completed on 2026-08-05** — Keep development-only exclusions in
+   `.extensionignore` while installing the runtime v2 handoff schema.
+3. **Status: Completed on 2026-08-07** — Simulate a development install and list the exact
    installed payload.
-4. **Status: Not started** — Confirm the installed payload contains no tests,
-   fixtures, schemas, submission notes, publication plans, branch plans, local
-   hooks, caches, or agent/tool workspace directories.
-5. **Status: Not started** — Confirm `docs/examples.md` is the only installed
+4. **Status: Completed on 2026-08-07** — Confirm the installed payload contains the v2
+   handoff schema but no tests, fixtures, submission notes, publication plans,
+   branch plans, local hooks, caches, or agent/tool workspace directories.
+5. **Status: Completed on 2026-08-07** — Confirm `docs/examples.md` is the only installed
    examples artifact.
 
 ### Integration Guidance
@@ -440,32 +445,34 @@ completed even when later release work refines their outputs.
 
 ### Repository Verification
 
-1. **Status: Not started for v1.0.1** — `git diff --check` passes.
-2. **Status: Not started for v1.0.1** — `git status --short` contains only
+1. **Status: Completed on 2026-08-07** — `git diff --check` passes.
+2. **Status: Completed on 2026-08-07** — `git status --short` contains only
    intentional release changes before commit.
-3. **Status: Not started for v1.0.1** — No secrets, credentials, private project
+3. **Status: Completed on 2026-08-07** — No secrets, credentials, private project
    paths, generated caches, or unrelated files are tracked.
-4. **Status: Not started for v1.0.1** — Manifest, README, changelog, release
+4. **Status: Completed on 2026-08-07** — Manifest, README, changelog, release
    notes, and submission values use the same version and description.
 
 ### Automated Verification
 
-1. **Status: Not started for v1.0.1** — Run
+1. **Status: Completed on 2026-08-07** — Run
    `python3 -m unittest discover -s tests`.
-2. **Status: Not started for v1.0.1** — Run parser smoke tests for `next`,
+2. **Status: Completed on 2026-08-07** — Run parser smoke tests for `next`,
    explicit phase, and `all`.
-3. **Status: Not started for v1.0.1** — Validate missing-file and missing-phase
-   failure paths.
-4. **Status: Not started for v1.0.1** — Load and validate `extension.yml` with
-   the release CLI.
+3. **Status: Completed on 2026-08-07** — Validate workflow completion and
+   verification resume, empty stages, classification, custom docs, role
+   sanitization, remediation cap, expected RED and green gates, exact staging,
+   dirty state, no-change stages, `--no-commit`, and documentation completion.
+4. **Status: Completed on 2026-08-07** — Load `extension.yml` through a Spec
+   Kit 0.13.0 development install and confirm version 2.0.0 is enabled.
 
 ### Development Installation
 
-1. **Status: Not started for v1.0.1** — Install from the final local directory
+1. **Status: Completed on 2026-08-07** — Install from the final local directory
    into a clean Spec Kit project.
-2. **Status: Not started for v1.0.1** — Verify the extension is enabled and the
+2. **Status: Completed on 2026-08-07** — Verify the extension is enabled and the
    command wrapper is registered for the active integration.
-3. **Status: Not started for v1.0.1** — Inspect the installed payload against
+3. **Status: Completed on 2026-08-07** — Inspect the installed payload against
    the contract in Section 4.
 
 ### Agent Matrix
@@ -475,37 +482,38 @@ completed even when later release work refines their outputs.
    Claude Code.
 3. **Status: Completed historically; final release retest not started** —
    Cursor.
-4. **Status: Not started for v1.0.1** — Record agent version, Spec Kit version,
-   operating system, command mode, result, validation, documentation path, and
-   caveats for each final test.
-5. **Status: Not started for v1.0.1** — Confirm at least one realistic run tests
-   the default parent-owned commit path.
-6. **Status: Not started for v1.0.1** — Confirm at least one realistic run tests
+4. **Status: Completed on 2026-08-07** — Forward-test isolated agents in
+   disposable repositories with minimal context; never use production projects.
+5. **Status: Completed on 2026-08-07** — Cover happy path, remediation success,
+   remediation exhaustion, empty stages, unrelated dirty files, and
    `--no-commit`.
-7. **Status: Not started for v1.0.1** — Confirm `all` mode stops safely after a
-   failed or blocked phase.
+6. **Status: In progress** — Record agent and Spec Kit versions,
+   operating system, mode, stage results, validation, documentation path, and
+   caveats for each final test. Codex desktop isolated-agent results, Spec Kit
+   0.13.0, Linux/WSL2, stage outcomes, and the three-slot harness caveat are
+   recorded; the runtime did not expose a subagent model build identifier.
 
 ### Release Archive
 
-1. **Status: Not started for v1.0.1** — Confirm remote tag `v1.0.1` exists.
-2. **Status: Not started for v1.0.1** — Confirm the archive URL returns a valid
+1. **Status: Not started for v2.0.0** — Confirm remote tag `v2.0.0` exists.
+2. **Status: Not started for v2.0.0** — Confirm the archive URL returns a valid
    ZIP download.
-3. **Status: Not started for v1.0.1** — Install from:
+3. **Status: Not started for v2.0.0** — Install from:
 
    ```text
-   https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.1.zip
+   https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip
    ```
 
-4. **Status: Not started for v1.0.1** — Run `specify extension list` and verify
-   `Phase Orchestrator (v1.0.1)` is enabled.
-5. **Status: Not started for v1.0.1** — Inspect the archive-installed payload
+4. **Status: Not started for v2.0.0** — Run `specify extension list` and verify
+   `Phase Orchestrator (v2.0.0)` is enabled.
+5. **Status: Not started for v2.0.0** — Inspect the archive-installed payload
    against Section 4.
-6. **Status: Not started for v1.0.1** — Verify command registration and a real
+6. **Status: Not started for v2.0.0** — Verify command registration and a real
    command run from the archive installation.
 
 Do not submit if any required final verification remains incomplete.
 
-## 10. GitHub Release v1.0.1
+## 10. GitHub Release v2.0.0
 
 1. **Status: Not started** — Finish all work and verification on `dev`.
 2. **Status: Not started** — Merge `dev` into `main`.
@@ -513,7 +521,7 @@ Do not submit if any required final verification remains incomplete.
 4. **Status: Not started** — Create annotated tag:
 
    ```bash
-   git tag -a v1.0.1 -m "Release v1.0.1"
+   git tag -a v2.0.0 -m "Release v2.0.0"
    ```
 
 5. **Status: Not started** — Push `main` and the tag.
@@ -523,7 +531,7 @@ Do not submit if any required final verification remains incomplete.
 8. **Status: Not started** — Synchronize release-only `main` commits back to
    `dev` if necessary.
 
-If a release-blocking defect is found after publishing `v1.0.1`, do not move or
+If a release-blocking defect is found after publishing `v2.0.0`, do not move or
 overwrite the tag. Fix it on `dev` and publish a new patch version.
 
 ## 11. Spec Kit Community Submission
@@ -546,14 +554,14 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 
 1. **Status: Approved** — Extension ID: `phase-orchestrator`.
 2. **Status: Approved** — Extension Name: `Phase Orchestrator`.
-3. **Status: Approved** — Version: `1.0.1`.
+3. **Status: Approved** — Version: `2.0.0`.
 4. **Status: Approved** — Description:
-   `Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits.`
+   `Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.`
 5. **Status: Approved** — Author: `awasali14`.
 6. **Status: Approved** — Repository:
    `https://github.com/awasali14/spec-kit-phase-orchestrator`.
-7. **Status: Approved** — Download URL:
-   `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.1.zip`.
+7. **Status: Approved as a planned value; not yet published** — Download URL:
+   `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip`.
 8. **Status: Approved** — License: `MIT`.
 9. **Status: Approved** — Homepage:
    `https://github.com/awasali14/spec-kit-phase-orchestrator`.
@@ -576,42 +584,45 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 
 ### Key Features
 
-1. **Status: Approved** — Selects the next incomplete phase, an explicit phase,
-   or all remaining phases from an existing Spec Kit `tasks.md`.
-2. **Status: Approved** — Uses one isolated worker per selected phase and aborts
-   if isolated workers are unavailable.
+1. **Status: Approved** — Selects the next workflow-incomplete phase, an
+   explicit phase, or all remaining workflow-incomplete phases from an existing
+   Spec Kit `tasks.md`.
+2. **Status: Approved** — Runs sequential context-isolated test,
+   implementation, read-only verification, conditional remediation and fresh
+   re-verification, and documentation agents.
 3. **Status: Approved** — Keeps `/speckit.implement` as the official
    implementation workflow.
-4. **Status: Approved** — Builds sanitized worker handoffs from parser output,
-   selected-phase context, and reusable reference templates.
-5. **Status: Approved** — Writes Markdown phase execution documentation with
-   validation results and styled Mermaid flow diagrams.
-6. **Status: Approved** — Creates parent-owned Conventional Commits by default
-   with `--no-commit` opt-out support.
+4. **Status: Approved** — Builds compact v2 stage handoffs containing only
+   phase scope, prior SHA and manifests, validation, and expected failures.
+5. **Status: Approved** — Uses independent read-only verification, at most two
+   remediation cycles, and documentation with a workflow-complete marker.
+6. **Status: Approved** — Creates parent-owned stage Conventional Commits with
+   exact-path staging and `--no-commit` opt-out support.
 7. **Status: Approved** — Never pushes to remotes.
 
 ### Submission Checklist
 
-1. **Status: Completed historically; v1.0.1 verification not started** — Valid
+1. **Status: Completed on 2026-08-07** — Valid
    `extension.yml` exists.
-2. **Status: Completed historically; v1.0.1 verification not started** — README
+2. **Status: Completed on 2026-08-07** — README
    contains installation and usage instructions.
 3. **Status: Completed** — MIT `LICENSE` exists.
-4. **Status: Completed historically; v1.0.1 verification not started** — All
+4. **Status: Completed on 2026-08-07** — All
    command files exist and are properly formatted.
 5. **Status: Completed** — Extension ID follows lowercase-with-hyphens naming.
-6. **Status: Not started** — `v1.0.1` GitHub release exists.
+6. **Status: Not started** — `v2.0.0` GitHub release exists.
 7. **Status: Not started** — Extension installs successfully through the final
    download URL.
 8. **Status: Not started** — All documented command modes execute without
    errors in the final release test matrix.
-9. **Status: In progress** — Documentation is complete and accurate.
-10. **Status: Not started** — Final security and secret review finds no known
+9. **Status: Completed on 2026-08-07** — Make documentation complete and accurate for the
+   v2.0.0 workflow.
+10. **Status: Completed on 2026-08-07** — Final security and secret review finds no known
     vulnerabilities or exposed credentials.
-11. **Status: Completed historically; v1.0.1 verification not started** —
+11. **Status: Completed on 2026-08-07** —
     Tested on at least one realistic project.
 12. **Status: Not started** — Final testing details and example usage are copied
-    from verified `v1.0.1` evidence into the submission issue.
+    from verified `v2.0.0` evidence into the submission issue.
 
 ### Proposed Catalog Entry
 
@@ -623,10 +634,10 @@ before submission:
   "phase-orchestrator": {
     "name": "Phase Orchestrator",
     "id": "phase-orchestrator",
-    "description": "Spec Kit Phase Orchestrator will run tasks.md one phase at a time with isolated worker handoffs, focused validation, Markdown execution documents, and parent-owned post-phase commits.",
+    "description": "Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.",
     "author": "awasali14",
-    "version": "1.0.1",
-    "download_url": "https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v1.0.1.zip",
+    "version": "2.0.0",
+    "download_url": "https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip",
     "repository": "https://github.com/awasali14/spec-kit-phase-orchestrator",
     "homepage": "https://github.com/awasali14/spec-kit-phase-orchestrator",
     "documentation": "https://github.com/awasali14/spec-kit-phase-orchestrator/tree/main/docs",
@@ -748,80 +759,96 @@ from `origin/dev`, and the working tree contains no unexplained changes.
 
 ### Stage 2 — Complete Public Examples And Documentation
 
-**Status: Completed on 2026-08-04**
+**Status: Completed on 2026-08-07**
 
-Make `docs/examples.md` self-contained, add every required invocation and
-result example, and update README and public-documentation links so
-`docs/examples.md` is the sole examples destination.
+Align README, usage, examples, agent support, and submission records with the
+staged-agent workflow, workflow-completion resume behavior, stage commit gates,
+and `--no-commit` manifests. Keep `docs/examples.md` self-contained.
 
 **Exit condition:** A user or agent can understand every supported mode without
 the repository-only `examples/` fixtures.
 
-**Evidence:** `docs/examples.md` now contains mode guidance, slash-command and
-Codex invocations, a copyable `tasks.md`, representative parser output, a
-sanitized worker handoff, and expected validation, documentation, commit, and
-failure results. README and usage documentation point to this single examples
-document.
+**Evidence:** Public documentation consistently explains the v2
+stages, verification/remediation limits, workflow-complete documentation, Git
+ownership, safety baselines, custom paths, and preserved command forms.
 
 ### Stage 3 — Finalize Runtime And Packaging Contracts
 
-**Status: Completed on 2026-08-04**
+**Status: Completed on 2026-08-07**
 
-Update the command description if needed, mark Git required in `extension.yml`,
-and add all approved development-only paths to `.extensionignore`.
+Finalize the v2 command, parser, role-specific prompt reference, phase document,
+runtime handoff schema, metadata, and development-only exclusions.
 
 **Exit condition:** The manifest, command, repository-source contract, and
 installed-payload contract agree.
 
-**Evidence:** The manifest and command use the same concise description, Git is
-required, and `.extensionignore` excludes tests, fixtures, schemas, submission
-notes, GitHub/workspace metadata, caches, and local planning files. All 24 unit
-tests and targeted manifest/frontmatter/packaging consistency checks passed.
+**Evidence:** A disposable Spec Kit 0.13.0 development install included the v2
+handoff schema and
+runtime references while excluding tests, fixtures, submission notes,
+GitHub/workspace metadata, caches, and local planning files. Manifest schema
+version remains `1.0`; extension and handoff contract versions are `2.0.0`.
 
 ### Stage 4 — Verify Integration Behavior And Guidance
 
-**Status: Not started**
+**Status: In progress**
 
-Test registration and switching with Spec Kit 0.13.0, then reconcile README and
-`docs/agent-support.md`. Retain remove-and-reinstall instructions only as a
-verified fallback.
+Test registration and switching with Spec Kit 0.13.0, inspect the generated
+integration wrapper, then reconcile README and `docs/agent-support.md`. Retain
+remove-and-reinstall instructions only as a verified fallback.
 
 **Exit condition:** The documented primary and fallback integration flows match
 observed CLI behavior.
 
+**Evidence:** Spec Kit 0.13.0 registered the generated Codex wrapper and
+reported a healthy integration with no modified or missing managed files.
+Non-Codex switching and fallback behavior still require release-candidate
+retesting.
+
 ### Stage 5 — Run Pre-Release Verification On `dev`
 
-**Status: Not started**
+**Status: Completed on 2026-08-07**
 
 Run unit tests, parser smoke and failure-path tests, manifest validation, a
-clean development installation, and an exact installed-payload inspection.
+Cover workflow completion/resume, empty stages, classification, sanitization,
+read-only verification, Mermaid routing, remediation cap, commit gates, exact
+staging, dirty state, no-change stages, `--no-commit`, and documentation
+completion.
 
 **Exit condition:** All checks pass and the installed copy contains only the
 files allowed by Section 4.
 
+**Evidence:** All 43 unit tests, parser mode smokes, schema/sample validation,
+Python syntax validation, payload assertions, and `git diff --check` passed.
+
 ### Stage 6 — Run The Compatibility And Agent Matrix
 
-**Status: Not started**
+**Status: Not started as a release gate; partial evidence completed on 2026-08-07**
 
-Re-test Codex, Claude Code, and Cursor. Cover the default commit path,
-`--no-commit`, and a blocked or failed `all` run. Re-test Spec Kit 0.8.7 or
-raise the declared minimum to the oldest version actually verified.
+Forward-test isolated agents with minimal context in disposable repositories.
+Cover happy path, remediation success, remediation exhaustion, empty stages,
+unrelated dirty files, and `--no-commit`. Re-test supported integrations and
+Spec Kit compatibility without touching production projects.
 
 **Exit condition:** Recorded evidence supports every declared agent, command
 mode, tool requirement, and minimum version.
 
-### Stage 7 — Finalize The `v1.0.1` Release Candidate
+**Available evidence:** The requested disposable Codex isolated-agent matrix
+passed all six scenarios. Final Claude Code and Cursor retests and Spec Kit
+0.8.7 minimum-version compatibility remain pending, so this release gate is not
+complete.
+
+### Stage 7 — Finalize The `v2.0.0` Release Candidate
 
 **Status: Not started**
 
-Set the manifest version to `1.0.1`, add the final changelog entry, update
+Set the manifest version to `2.0.0`, add the final changelog entry, update
 submission notes with all evidence available before publication, check version
 and description consistency, and perform the security and secret review.
 Commit and push the complete release candidate on `dev`.
 
 **Exit condition:** `origin/dev` contains the intended release contents and all
 pre-tag verification is green. Do not yet change README installation
-instructions to claim that the `v1.0.1` archive exists.
+instructions to claim that the `v2.0.0` archive exists.
 
 ### Stage 8 — Promote And Verify The Release Commit
 
@@ -833,7 +860,7 @@ the complete release verification suite on the resulting `main` commit.
 **Exit condition:** The exact commit to be tagged passes every applicable check
 in Section 9 with no unexplained working-tree changes.
 
-### Stage 9 — Tag And Publish `v1.0.1`
+### Stage 9 — Tag And Publish `v2.0.0`
 
 **Status: Not started**
 
@@ -847,7 +874,7 @@ the verified commit.
 
 **Status: Not started**
 
-Download the real `v1.0.1` tag archive, install it into a clean Spec Kit
+Download the real `v2.0.0` tag archive, install it into a clean Spec Kit
 project, inspect the installed payload, confirm the enabled version and
 registered command, and run a real command from that installation.
 
@@ -860,7 +887,7 @@ archive has a release-blocking defect, do not move the tag; fix it through
 **Status: Not started**
 
 Only after the archive is verified, update README installation instructions to
-the real `v1.0.1` URL and finish `docs/submission-notes.md` with the exact
+the real `v2.0.0` URL and finish `docs/submission-notes.md` with the exact
 release and test results. Make these documentation-only changes on `dev`, merge
 them into `main`, and push both branches as applicable.
 
@@ -878,7 +905,7 @@ and open the Extension Submission issue using the approved metadata and AI
 disclosure.
 
 **Exit condition:** The submitted issue contains only values supported by the
-verified `v1.0.1` release evidence.
+verified `v2.0.0` release evidence.
 
 ### Stage 13 — Handle Review Through Acceptance
 

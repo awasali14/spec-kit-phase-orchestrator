@@ -1,7 +1,7 @@
 # Spec Kit Phase Orchestrator
 
-Run Spec Kit `tasks.md` phase-by-phase by spawning isolated subagents for
-clean handoffs, validation, docs, and commits.
+Run Spec Kit `tasks.md` phase-by-phase through isolated test, implementation,
+verification, remediation, and documentation agents with parent-owned Git.
 
 Maintainer: `awasali14`
 
@@ -14,23 +14,25 @@ The agent may carry too much context from previous phases, blur task
 boundaries, or mark tasks complete without a clear validation trail.
 
 Spec Kit Phase Orchestrator solves that by selecting one phase from an
-existing `tasks.md`, creating a compact phase handoff, running only that
-phase, writing a Markdown execution document, and stopping at a validation
-gate.
+existing `tasks.md` and running context-isolated stages against shared
+repository state. Compact handoffs and explicit validation, Git, and
+documentation gates preserve a reviewable execution trail.
 
 ## What It Does
 
 1. Parses an existing Spec Kit `tasks.md`.
 2. Selects `next`, `phase <number>`, or `all`.
-3. Runs one phase at a time.
-4. Spawns an isolated subagent for each phase.
+3. Runs one phase at a time through sequential, isolated stage agents.
+4. Runs test tasks, implementation/setup tasks, read-only verification,
+   conditional remediation with fresh re-verification, and documentation.
 5. Aborts with a clear message when subagents or isolated worker contexts are
    unavailable.
-6. Marks completed task checkboxes.
-7. Runs focused validation.
-8. Writes phase documentation.
-9. Reviews the phase diff and creates one parent-owned post-phase commit by
-   default.
+6. Skips empty test or implementation stages, but always verifies and
+   documents the phase.
+7. Marks assigned task checkboxes only after the owning stage passes its gate.
+8. Records exact-path manifests, validation results, commit SHAs, and a durable
+   workflow-complete documentation marker.
+9. Lets the parent create eligible per-stage commits after strict gates.
 
 ## What It Does Not Do
 
@@ -81,10 +83,14 @@ Use a custom documentation directory:
 Without a custom location, generated Markdown phase documents go under
 `Documentation/{feature-slug}/`.
 
-By default, the parent orchestrator reviews the completed phase, stages only
-selected-phase files, and creates one Conventional Commit after validation and
-documentation checks pass. To leave changes unstaged and uncommitted, add
-`--no-commit` or clearly say not to commit:
+By default, the parent orchestrator records a HEAD and working-tree baseline
+before every stage, reviews its manifest, stages exact eligible paths, and
+creates a Conventional Commit after that stage's gate passes. Test commits may
+be intentionally RED only when failures are caused by missing assigned
+implementation; implementation and remediation commits must be green.
+
+To run every stage and gate while leaving all reviewed changes unstaged and
+uncommitted, add `--no-commit` or clearly say not to commit:
 
 ```text
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --no-commit
@@ -100,9 +106,10 @@ portable command prompt and supporting scripts rather than a Codex-only skill.
 The extension has been manually tested successfully with Codex, Claude Code,
 and Cursor.
 
-The command requires subagents or isolated worker contexts and uses exactly one
-worker for the selected phase. If the active coding agent does not support
-isolated workers, the command aborts and informs the user.
+The command requires subagents or isolated worker contexts. It launches one
+context-isolated agent at a time for the selected phase; later agents receive
+only compact structured handoffs and inspect shared repository state. If the
+active coding agent cannot provide isolation, the command aborts.
 
 Spec Kit installs agent-facing command wrappers into the relevant integration
 directory, such as `.agents/skills` for Codex, `.cursor/skills` for Cursor,
@@ -165,18 +172,21 @@ Supporting scripts and reference templates remain under
 
 1. Official `/speckit.implement` remains untouched.
 2. Only the selected phase should be implemented.
-3. Validation must run before a phase is considered complete.
-4. Phase documentation preserves the implementation trail.
-5. Unrelated git changes should not be staged or committed.
-6. Mixed unrelated changes should stop the workflow for user guidance.
-7. Workers should never stage, commit, or push; post-phase commits are a parent
-   responsibility.
+3. Test, implementation, remediation, verification, and documentation gates
+   must pass before a phase is workflow-complete.
+4. Verification is read-only and always runs in a fresh context; at most two
+   remediation and re-verification cycles are permitted.
+5. Phase documentation preserves aggregate stage results and the durable
+   workflow-complete marker.
+6. Unrelated/generated artifacts and overlap with pre-existing dirty files
+   stop the workflow; unrelated pre-existing files remain untouched.
+7. Workers never stage, commit, push, spawn workers, rerun the orchestrator, or
+   cross phase boundaries. The parent alone owns exact-path Git operations.
 
 ## Examples
 
-See [`docs/examples.md`](docs/examples.md) for the self-contained command,
-`tasks.md`, parser-output, worker-handoff, validation, documentation, and
-commit examples.
+See [`docs/examples.md`](docs/examples.md) for command, parser, staged handoff,
+validation, remediation, documentation, and commit examples.
 
 ## Testing
 

@@ -1,40 +1,70 @@
 # Phase Execution Document Template
 
-Use this structure for the Markdown document written at the selected phase's
-`documentation_path`.
+The documentation agent writes this document only after a fresh verifier
+returns a passing verdict. Replace every placeholder. Do not write the final
+marker for a failed or incomplete workflow.
 
 ````markdown
 # Phase [PHASE_NUMBER]: [PHASE_TITLE]
 
-## Scope
+## Workflow Status
 
 - Tasks file: `[TASKS_PATH]`
 - Completed task IDs: [COMPLETED_TASK_IDS]
+- Final verification: passed
 - Documentation path: `[DOCUMENTATION_PATH]`
+- Final commit before documentation: `[PRIOR_SHA_OR_NO_COMMIT]`
+- Commit mode: committed stages / `--no-commit`
+
+## Staged Execution
+
+| Stage | Task IDs | Status | Commit SHA | Reviewed manifest |
+| --- | --- | --- | --- | --- |
+| Test | [IDS_OR_SKIPPED] | passed / expected RED / skipped | [SHA_OR_NONE] | [PATHS_OR_NONE] |
+| Implementation | [IDS_OR_SKIPPED] | passed / skipped | [SHA_OR_NONE] | [PATHS_OR_NONE] |
+| Verification | none | passed | none | read-only |
+| Remediation | [IDS_OR_NOT_RUN] | passed / not run | [SHA_OR_NONE] | [PATHS_OR_NONE] |
+| Re-verification | none | passed / not run | none | read-only |
+| Documentation | none | complete | [PENDING_PARENT_DOCS_COMMIT] | this document |
+
+Record each remediation/re-verification cycle as its own row when one ran.
+Never copy raw traces into this table.
 
 ## Work Completed
 
-Summarize only the implementation, setup, and test-first work completed in this
-selected phase. Keep the summary concise and tied to task IDs.
+Summarize the phase-scoped test, implementation, and remediation results. Tie
+each statement to task IDs and keep skipped stages explicit.
 
 ## Changed Files
 
-- `[PATH]` - [modified or added/created; brief selected-phase reason]
+- `[PATH]` - [stage; modified or added; concise reason]
+
+List the union of reviewed stage manifests. Exclude pre-existing unrelated
+dirty files and rejected generated artifacts.
 
 ## Validation
 
-| Command | Status | Notes |
-| --- | --- | --- |
-| `[COMMAND]` | passed/failed/not run | [notes] |
+| Stage | Kind | Command | Status | Notes |
+| --- | --- | --- | --- | --- |
+| [STAGE] | focused / independent phase / regression | `[COMMAND]` | passed / expected RED | [compact result] |
+
+Record intentional RED failures with the missing assigned implementation that
+caused them. Record the final verifier's focused, independent-phase, and
+suitable regression results.
+
+## Verification And Remediation
+
+- Initial verification findings: [SUMMARY_OR_NONE]
+- Remediation attempts used: [0_TO_2]
+- Final verification findings: [PASSING_SUMMARY]
+- Remaining validation gaps: [NONE_OR_EXPLICIT_GAPS]
 
 ## Phase Flow
 
-Include one required styled Phase Flow Mermaid diagram unless the user
-explicitly asked to omit diagrams for this run. Keep labels short and copy the
-dark/emerald `classDef` and `linkStyle` lines from
+Include this styled Mermaid diagram unless the user explicitly opted out. Keep
+labels short and copy the dark/emerald `classDef` and `linkStyle` lines from
 `references/mermaid-style.md` exactly unless the project already has diagram
-styling. Every command or step shown in the diagram must also be represented in
-Work Completed, Validation, or Issues And Caveats.
+styling. Every shown validation step must also appear above.
 
 ```mermaid
 flowchart LR
@@ -43,34 +73,35 @@ flowchart LR
   classDef node fill:#161616,stroke:#424242,color:#ffffff
   linkStyle default stroke:#00E589,color:#00E589
 
-  subgraph Phase["Selected phase"]
+  subgraph Build["Staged build"]
     direction TB
-    A["Tests or setup"]:::node
+    A["Tests"]:::node
     B["Implementation"]:::node
   end
 
-  subgraph Gate["Validation gate"]
+  subgraph Gate["Independent gate"]
     direction TB
-    C["Focused validation"]:::node
-    D["Execution doc"]:::node
+    C["Verification"]:::node
+    D["Remediation if needed"]:::node
+    E["Fresh verification"]:::node
   end
 
-  A --> B --> C --> D
-  class Phase,Gate outer
+  F["Execution document"]:::node
+  A --> B --> C
+  C -->|fail| D --> E
+  C -->|pass| F
+  E -->|pass| F
+  class Build,Gate outer
 ```
 
 ## Issues And Caveats
 
-Record blockers, selected-phase validation gaps, risky assumptions, or
+Record blockers, validation gaps, expected RED context, risky assumptions, or
 follow-up work. Write `None` only when there are no caveats.
 
-Do not invent undocumented validation steps. For example, do not claim a
-"confirmed missing-module failure" unless the command appears in the validation
-table or the gap is recorded here.
+<!-- phase-orchestrator:workflow-complete v2 -->
 ````
 
-## Notes
-
-Use generic paths and wording unless the user supplied project-specific
-documentation requirements. If the user supplied an exact documentation path,
-preserve it.
+The exact final HTML comment is the durable workflow-complete marker consumed
+by `scripts/phase_tasks.py`. Its presence means the document records a passing
+fresh verification; it is not merely a documentation-exists flag.
