@@ -130,7 +130,8 @@ role section.
 Route official implementation discipline, relevant skills,
 and automatically selected frontend/backend skills and MCPs only to the phase
 stages that need them. Include the selected MCPs, applicable MCP opt-outs, and
-Exa-first web-search policy in each handoff. Keep tool notes similarly scoped.
+Exa-first web-search policy in each handoff. Keep operational notes similarly
+scoped.
 Do not leak parent orchestration context. Only the documentation stage receives
 the phase document path/template or Mermaid instructions.
 
