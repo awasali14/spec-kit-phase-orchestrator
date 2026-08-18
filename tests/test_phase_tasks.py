@@ -455,9 +455,10 @@ class PhaseTasksParserTest(unittest.TestCase):
         template = PHASE_DOC_TEMPLATE.read_text(encoding="utf-8")
 
         self.assertIn("## Staged Execution", template)
+        self.assertIn("## Regression Baseline And Attribution", template)
         self.assertIn("## Verification And Remediation", template)
         self.assertIn(WORKFLOW_MARKER, template)
-        self.assertIn("passing fresh verification", compact(template))
+        self.assertIn("phase-safe fresh verification", compact(template))
         for line in style_lines(style):
             self.assertIn(line, template)
         self.assertNotIn("#000000", template)
@@ -470,7 +471,13 @@ class PhaseTasksParserTest(unittest.TestCase):
         documentation = section(template, "Documentation Role")
         self.assertIn(mermaid_path, documentation)
         self.assertIn(phase_doc_path, documentation)
-        for role in ["Test Role", "Implementation Role", "Verification Role", "Remediation Role"]:
+        for role in [
+            "Regression Baseline Role",
+            "Test Role",
+            "Implementation Role",
+            "Verification Role",
+            "Remediation Role",
+        ]:
             role_text = section(template, role)
             self.assertNotIn(mermaid_path, role_text)
             self.assertNotIn(phase_doc_path, role_text)
@@ -489,6 +496,64 @@ class PhaseTasksParserTest(unittest.TestCase):
             "never commit eligible",
         ]:
             self.assertIn(expected, verification)
+
+    def test_verifier_strictly_attributes_and_routes_regressions(self) -> None:
+        template = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Verification Role",
+            )
+        )
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for expected in [
+            "same command and comparable environment",
+            "identical failing test identities and material signatures",
+            "no new failure",
+            "`phase_introduced_regression`",
+            "`preexisting_unrelated_regression`",
+            "`inconclusive` with disposition `block`",
+            "`passed_with_deferred_findings`",
+        ]:
+            self.assertIn(expected, template)
+        for expected in [
+            "baseline passed but the current command fails",
+            "adds failing test identities",
+            "materially changes a baseline failure signature",
+            "reruns the parser in `all` mode",
+            "exclude the current selected phase",
+            "sets `downstream_safe` to false",
+            "changes the disposition to `block`",
+            "record it immediately",
+        ]:
+            self.assertIn(expected, command)
+
+    def test_phase_introduced_regression_remediates_before_scope_block(self) -> None:
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        self.assertIn("Send it to remediation when an in-scope repair is possible", command)
+        self.assertIn(
+            "cannot be resolved without crossing phase scope",
+            command,
+        )
+        self.assertIn("attributes a regression as uncertain", command)
+
+    def test_regression_baseline_role_is_read_only_and_records_comparable_evidence(
+        self,
+    ) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        baseline = compact(section(template, "Regression Baseline Role"))
+
+        for expected in [
+            "strictly read-only before phase mutations",
+            "exact text",
+            "environment fingerprint",
+            "failing test identities",
+            "material failure signatures",
+            "`baseline_recorded`",
+            "evidence, not a stage failure",
+        ]:
+            self.assertIn(expected, baseline)
 
     def test_each_role_is_context_isolated_and_sanitized(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
@@ -528,7 +593,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         ]:
             self.assertIn(invalid, test_role)
 
-    def test_implementation_role_runs_preceding_phase_tests_until_green(self) -> None:
+    def test_implementation_role_routes_unresolved_gate_to_verification(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
         implementation = compact(section(template, "Implementation Role"))
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
@@ -537,9 +602,10 @@ class PhaseTasksParserTest(unittest.TestCase):
             "preceding test stage, when present",
             "complete focused phase-test gate",
             "any other relevant phase-scoped tests",
-            "Fix phase-scoped implementation failures",
-            "require green results",
-            "out-of-scope requirement",
+            "If green cannot be reached",
+            "return `unresolved` with typed findings",
+            "not a final blocker decision",
+            "ineligible for a parent commit until a fresh verifier",
         ]:
             self.assertIn(expected, implementation)
         self.assertIn("tests authored by the preceding test stage", command)
@@ -571,7 +637,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("for both test and implementation work", routing)
         self.assertIn("for remediation only when it is useful", routing)
 
-    def test_remediation_role_stops_for_fresh_verifier_and_parent_cap(self) -> None:
+    def test_every_remediation_result_gets_fresh_verification_and_parent_cap(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
         remediation = compact(section(template, "Remediation Role"))
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
@@ -579,6 +645,8 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("fresh read-only verifier", remediation)
         self.assertIn("two-attempt cap", remediation)
         self.assertIn("at most two complete", command)
+        self.assertIn("regardless of the remediation validation result", command)
+        self.assertIn("does not itself make the final stop decision", command)
 
     def test_worker_report_uses_lightweight_required_field_contract(self) -> None:
         template = compact(
@@ -600,13 +668,25 @@ class PhaseTasksParserTest(unittest.TestCase):
             self.assertIn(field, template)
         self.assertIn("may be empty or omitted", template)
         self.assertIn("not governed by `phase-handoff.schema.json`", template)
+        for field in [
+            '"kind"',
+            '"disposition"',
+            '"attribution"',
+            '"confidence"',
+            '"baseline_evidence"',
+            '"current_evidence"',
+            '"downstream_safe"',
+        ]:
+            self.assertIn(field, template)
+        for disposition in ["remediate", "defer", "block"]:
+            self.assertIn(disposition, template)
         self.assertIn("schema does not govern the worker's stage report", command)
         self.assertNotIn("schema-invalid report", command)
         self.assertIn("missing required fields", command)
         self.assertIn("contradicts the stage contract", command)
         self.assertIn("lacks enough evidence for the parent gate", command)
 
-    def test_remediation_commit_waits_for_fresh_reverification(self) -> None:
+    def test_implementation_and_remediation_share_one_verified_commit_gate(self) -> None:
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
         remediation = compact(
             section(
@@ -615,12 +695,15 @@ class PhaseTasksParserTest(unittest.TestCase):
             )
         )
 
-        self.assertIn("keep it unstaged and uncommitted", command)
-        self.assertIn("Only after fresh re-verification passes", command)
-        self.assertIn("stage the exact accumulated remediation paths", command)
-        self.assertIn("leave all remediation changes unstaged and uncommitted", command)
-        self.assertNotIn("failed post-commit changes", command)
-        self.assertIn("remains unstaged and uncommitted until", remediation)
+        self.assertIn("keep all implementation changes unstaged and uncommitted", command)
+        self.assertIn("exact union of implementation and remediation manifests", command)
+        self.assertIn("stage that exact path union once", command)
+        self.assertIn("assigned implementation-task intent", command)
+        self.assertIn(
+            "leave every implementation/remediation change unstaged and uncommitted",
+            command,
+        )
+        self.assertIn("remains unstaged and uncommitted", remediation)
 
     def test_usage_starts_with_a_purpose_line(self) -> None:
         lines = USAGE.read_text(encoding="utf-8").splitlines()
@@ -635,8 +718,8 @@ class PhaseTasksParserTest(unittest.TestCase):
         expected_description = (
             "Use /speckit.phase-orchestrator.phase or "
             "$speckit-phase-orchestrator-phase to run Spec Kit tasks.md through "
-            "isolated test, implementation, verification, remediation, and "
-            "documentation agents with parent-owned gated commits."
+            "isolated regression-baseline, test, implementation, verification, "
+            "remediation, and documentation agents with parent-owned gated commits."
         )
 
         self.assertIn(f'description: "{expected_description}"', command_text)
@@ -716,6 +799,8 @@ class PhaseTasksParserTest(unittest.TestCase):
             "[PRIOR_SHA]",
             "[PRIOR_MANIFEST_SUMMARY_OR_NONE]",
             "[PRIOR_VALIDATION_SUMMARY_OR_NONE]",
+            "[REGRESSION_BASELINE_OR_UNAVAILABLE]",
+            "[DEFERRED_FINDINGS_OR_NONE]",
             "[EXPECTED_FAILURES_OR_NONE]",
             "[REMEDIATION_ATTEMPT_OR_ZERO]",
             "[COMMIT_ELIGIBILITY_AND_REQUIREMENTS]",
@@ -732,9 +817,83 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertEqual(schema["properties"]["schema_version"]["const"], "2.0.0")
         self.assertEqual(
             set(schema["properties"]["stage"]["enum"]),
-            {"test", "implementation", "verification", "remediation", "documentation"},
+            {
+                "baseline_verification",
+                "test",
+                "implementation",
+                "verification",
+                "remediation",
+                "documentation",
+            },
         )
         assert_schema_valid(self, sample)
+
+    def test_handoff_schema_enforces_baseline_read_only_no_commit_contract(self) -> None:
+        schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
+        sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
+        baseline = copy.deepcopy(sample)
+        baseline.update(
+            stage="baseline_verification",
+            assigned_task_ids=[],
+            expected_failures=[],
+            remediation_attempt=0,
+        )
+        baseline["scope"]["read_only"] = True
+        baseline["validation"]["verdict"] = "pending"
+        baseline["validation"]["results"] = []
+        baseline["commit_eligibility"].update(eligible=False, change_kind="none")
+        assert_schema_valid(self, baseline)
+
+        baseline["assigned_task_ids"] = ["T007"]
+        self.assertFalse(Draft202012Validator(schema).is_valid(baseline))
+        baseline["assigned_task_ids"] = []
+        baseline["scope"]["read_only"] = False
+        self.assertFalse(Draft202012Validator(schema).is_valid(baseline))
+        baseline["scope"]["read_only"] = True
+        baseline["commit_eligibility"].update(eligible=True, change_kind="fix")
+        self.assertFalse(Draft202012Validator(schema).is_valid(baseline))
+
+    def test_handoff_schema_types_regression_evidence_and_findings(self) -> None:
+        schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
+        sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
+        verifier = copy.deepcopy(sample)
+        verifier.update(
+            stage="verification",
+            assigned_task_ids=[],
+            expected_failures=[],
+            remediation_attempt=0,
+        )
+        verifier["scope"]["read_only"] = True
+        verifier["commit_eligibility"].update(eligible=False, change_kind="none")
+        evidence = {
+            "command": "npm test -- regression",
+            "environment_fingerprint": "node-22; runner-1",
+            "status": "failed",
+            "failing_tests": ["legacy regression"],
+            "failure_signatures": ["expected active; received pending"],
+        }
+        verifier["regression_baseline"] = [copy.deepcopy(evidence)]
+        verifier["findings"] = [
+            {
+                "id": "F1",
+                "kind": "preexisting_unrelated_regression",
+                "gate": "regression",
+                "disposition": "defer",
+                "attribution": "preexisting_unrelated",
+                "confidence": "confirmed",
+                "summary": "Unchanged legacy regression.",
+                "related_task_ids": [],
+                "affected_paths": ["src/legacy.js"],
+                "baseline_evidence": copy.deepcopy(evidence),
+                "current_evidence": copy.deepcopy(evidence),
+                "downstream_safe": None,
+            }
+        ]
+        assert_schema_valid(self, verifier)
+
+        missing_confidence = copy.deepcopy(verifier)
+        del missing_confidence["findings"][0]["confidence"]
+        self.assertFalse(Draft202012Validator(schema).is_valid(missing_confidence))
 
     def test_handoff_schema_enforces_expected_red_attribution(self) -> None:
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
@@ -776,7 +935,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             ).is_valid(verifier)
         )
 
-    def test_handoff_schema_caps_remediation_and_requires_green_commit_gate(self) -> None:
+    def test_handoff_schema_caps_remediation_and_defers_worker_commits(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         remediation = copy.deepcopy(sample)
@@ -785,22 +944,29 @@ class PhaseTasksParserTest(unittest.TestCase):
             remediation_attempt=2,
             expected_failures=[],
         )
-        remediation["validation"]["verdict"] = "passed"
-        remediation["commit_eligibility"].update(eligible=True, change_kind="fix")
+        remediation["validation"]["verdict"] = "failed"
+        remediation["commit_eligibility"].update(eligible=False, change_kind="none")
         assert_schema_valid(self, remediation)
 
         exhausted = copy.deepcopy(remediation)
         exhausted["remediation_attempt"] = 3
         self.assertFalse(Draft202012Validator(schema).is_valid(exhausted))
 
-        red_remediation = copy.deepcopy(remediation)
-        red_remediation["validation"]["verdict"] = "failed"
-        self.assertFalse(Draft202012Validator(schema).is_valid(red_remediation))
+        commit_eligible_remediation = copy.deepcopy(remediation)
+        commit_eligible_remediation["validation"]["verdict"] = "passed"
+        commit_eligible_remediation["commit_eligibility"].update(
+            eligible=True, change_kind="fix"
+        )
+        self.assertFalse(
+            Draft202012Validator(schema).is_valid(commit_eligible_remediation)
+        )
 
         implementation = copy.deepcopy(remediation)
         implementation.update(stage="implementation", remediation_attempt=0)
-        implementation["validation"]["verdict"] = "failed"
-        implementation["commit_eligibility"]["change_kind"] = "feat"
+        implementation["validation"]["verdict"] = "passed"
+        implementation["commit_eligibility"].update(
+            eligible=True, change_kind="feat"
+        )
         self.assertFalse(Draft202012Validator(schema).is_valid(implementation))
 
     def test_documentation_handoff_requires_marker_contract(self) -> None:
@@ -838,7 +1004,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             "exact changed-path manifest",
             "Reject unrelated paths, unexpected generated artifacts",
             "stage only those paths",
-            "stage the exact accumulated remediation paths",
+            "stage that exact path union once",
             "stage that exact path",
             "Never use broad staging",
         ]:
@@ -864,13 +1030,14 @@ class PhaseTasksParserTest(unittest.TestCase):
         for subject in [
             "test(<scope>): add phase <N> coverage",
             "feat(<scope>):",
-            "fix(<scope>): resolve phase <N> validation findings",
+            "fix(<scope>):",
+            "chore(<scope>):",
             "docs(<scope>): document phase <N> execution",
         ]:
             self.assertIn(subject, command)
         self.assertGreaterEqual(command.count("prior SHA"), 4)
-        self.assertIn("Require green results", command)
-        self.assertIn("Require its focused validation to pass", command)
+        self.assertIn("phase-safe final verification", command)
+        self.assertIn("assigned implementation-task intent", command)
 
     def test_all_mode_completes_every_gate_before_reselection(self) -> None:
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))

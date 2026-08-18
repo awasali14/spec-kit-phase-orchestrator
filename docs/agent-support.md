@@ -20,16 +20,18 @@ integrations still need sequential isolated-agent support to run the command.
 The command requires subagents or isolated worker contexts. It launches one
 context-isolated stage agent at a time while sharing repository state:
 
-1. Test, skipped when empty.
-2. Implementation, skipped when empty.
-3. Read-only verification, always run.
-4. Conditional remediation and fresh read-only re-verification, capped at two
-   cycles.
-5. Documentation, always run after final verification passes.
+1. Read-only regression baseline before phase mutations.
+2. Test, skipped when empty.
+3. Implementation, skipped when empty.
+4. Read-only verification, always run.
+5. Conditional remediation and fresh read-only re-verification after every
+   remediation result, capped at two cycles.
+6. Documentation after a phase-safe final verdict.
 
 Each later agent gets only a compact structured handoff: phase/task IDs,
-relevant paths, validation summaries, expected failures, prior SHA/manifest,
-scope, and remediation attempt when applicable. Do not pass full traces.
+relevant paths, regression-baseline and current validation summaries, deferred
+findings, expected failures, prior SHA/manifest, scope, and remediation attempt
+when applicable. Do not pass full traces.
 
 Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
 or continue to another phase. The parent owns baselines, manifest review,
@@ -37,8 +39,10 @@ exact-path staging, commits, remediation-cycle control, and continuation.
 
 Every worker report always includes `stage`, `phase_number`, `status`,
 `changed_paths`, `validation`, and `commit_eligible`. Expected failures,
-findings, and caveats may be empty or omitted. This lightweight report contract
-is separate from the JSON schema used for parent-to-worker handoffs.
+findings, and caveats may be empty or omitted. Non-empty findings use typed
+classification, disposition, attribution, comparison, and downstream-safety
+fields. This lightweight report contract remains separate from the JSON schema
+used for parent-to-worker handoffs.
 
 Parent-only model and effort settings, fallback model-selection text, and
 orchestration instructions should stay with the parent. They are configuration
@@ -51,13 +55,18 @@ and concise reference summaries.
 Only the documentation agent receives the phase-document and Mermaid
 instructions. The test agent is test-only and may produce eligible intentional
 RED changes solely when missing assigned implementation explains the failure.
-The implementation agent runs the complete focused phase-test gate, including
-tests authored by the preceding test stage, when present, and any other relevant
-phase-scoped tests, and fixes phase-scoped implementation failures until green.
-A test-authoring-only phase may satisfy its contract with attributable expected
-RED; remediation must not add out-of-scope implementation. Remediation stays
-uncommitted until a fresh read-only verifier passes. Verifiers are strictly
-read-only.
+The implementation agent runs the complete focused phase-test gate and reports
+typed unresolved findings when it cannot reach green. Implementation and
+remediation workers do not make final blocker decisions. A fresh verifier
+classifies findings as remediable, deferrable, or blocking and reruns exact
+baseline regression commands. A test-authoring-only phase may satisfy its
+contract with attributable expected RED. Implementation and remediation stay
+uncommitted until phase-safe verification. Verifiers are strictly read-only.
+
+Only a demonstrably pre-existing, unrelated, unchanged regression with passing
+focused and independent-phase gates and proven downstream safety may be
+deferred. A phase-introduced regression first receives in-scope remediation;
+uncertain attribution or required cross-phase changes stop the queue.
 
 In `all` mode, the parent owns the queue. It completes every stage gate and
 confirms the durable workflow-complete documentation marker before starting
@@ -141,12 +150,13 @@ Restart the coding agent after re-registering the extension.
 
 ## Commits
 
-Per-stage commits are parent-owned by default. Before each stage, record HEAD
-and the working-tree baseline. After an eligible successful stage, review its
-manifest, reject unrelated/generated artifacts or overlap with pre-existing
-dirty files, and stage exact paths only. Commit bodies record stage, task IDs,
-files, validation, expected failures when applicable, and prior SHA. Verifiers
-never commit.
+Commits are parent-owned by default. Before each stage, record HEAD and the
+working-tree baseline. Test work may retain its eligible stage commit, but
+implementation and remediation manifests remain unstaged until phase-safe
+verification. Then stage their exact accumulated path union once and select
+`feat`, `fix`, or `chore` from the task intent. Commit bodies record task IDs,
+files, baseline comparison, validation, remediation, deferred and expected
+failures when applicable, and prior SHA. Baseline/verifier workers never commit.
 
 If the user includes `--no-commit` or clearly says not to commit, all stages
 and gates still run. The parent tracks per-stage manifests but suppresses every
@@ -158,8 +168,8 @@ orchestrator never pushes.
 When no custom documentation location is provided, use the parser-generated
 path under `Documentation/{feature-slug}/`. Preserve `--docs-dir`, and use an
 explicit user-provided Markdown path exactly. The final document aggregates
-stage reports, SHAs, manifests, validation, remediation history, and the
-durable workflow-complete marker.
+stage reports, SHAs, manifests, regression attribution, deferred findings,
+validation, remediation history, and the durable workflow-complete marker.
 
 ## Agent Requirements
 

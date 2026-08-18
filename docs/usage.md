@@ -74,51 +74,60 @@ parser output, and an end-to-end worker handoff and result.
 The parent runs these stages sequentially in isolated contexts that share the
 repository:
 
-1. Test agent, skipped when no test tasks remain.
-2. Implementation agent, skipped when no implementation/setup tasks remain.
-3. Read-only verification agent, always run.
-4. Remediation agent followed by a fresh read-only verifier when verification
-   fails, with at most two remediation cycles.
-5. Documentation agent, always run after final verification passes.
+1. Read-only regression-baseline agent before phase mutations.
+2. Test agent, skipped when no test tasks remain.
+3. Implementation agent, skipped when no implementation/setup tasks remain.
+4. Read-only verification agent, always run.
+5. Remediation agent followed by a fresh read-only verifier for every
+   remediation result, with at most two cycles.
+6. Verified implementation/remediation commit gate.
+7. Documentation agent after a phase-safe final verdict.
 
 Later agents receive compact handoffs containing phase/task IDs, relevant
-paths, validation summaries, expected failures, prior SHA/manifests, and the
-remediation attempt when applicable. They do not receive full traces.
+paths, baseline and current validation summaries, deferred findings, expected
+failures, prior SHA/manifests, and the remediation attempt when applicable.
+They do not receive full traces.
 
 The test agent changes only assigned test tasks. It may report an intentional
 RED result only when the failure is attributable to missing assigned
 implementation. Syntax, collection, fixture, infrastructure, and unrelated
 failures stop the stage without a commit. The implementation agent inspects
 committed tests directly, or the reviewed test manifest under `--no-commit`,
-and must run the complete focused phase-test gate, including tests authored by
-the preceding test stage, when present, and any other relevant phase-scoped
-tests, until it passes. Verification is strictly read-only and reports focused,
-independent-phase, and suitable regression validation. A test-authoring-only
-phase may complete with attributable expected RED without out-of-scope
-remediation. Remediation changes remain uncommitted until fresh re-verification
-passes.
+and runs the complete focused phase-test gate. If it cannot reach green, it
+returns typed unresolved findings for independent verification rather than
+making the final blocker decision. Verification is strictly read-only and
+reports focused, independent-phase, and suitable regression validation. Every
+remediation outcome is freshly verified. Implementation and remediation remain
+uncommitted until a phase-safe verdict.
 
-The documentation agent receives aggregate stage reports, SHAs, and manifests;
-it changes only the resolved phase execution document and records
-`<!-- phase-orchestrator:workflow-complete v2 -->` after final verification
-passes.
+A regression may be deferred only when the pre-phase and current commands and
+environments are comparable, failing test identities and material signatures
+are unchanged, focused and independent-phase gates pass, and the parent proves
+later queued phases do not depend on the affected behavior. The current phase
+is excluded because it remains parser-incomplete until documentation. A new or
+worsened regression is remediated within phase scope; uncertainty or required
+scope crossing stops the workflow. A test-authoring-only phase may still
+complete with attributable expected RED.
+
+The documentation agent receives aggregate stage reports, SHAs, manifests,
+baseline comparisons, and deferred findings. It changes only the resolved phase
+execution document and records `<!-- phase-orchestrator:workflow-complete v2 -->`
+after a phase-safe final verdict.
 
 ## Parent-Owned Git Gates
 
 Before every stage, the parent records HEAD and the working-tree baseline.
-After an eligible successful stage, it reviews the stage manifest and stages
-only exact paths before creating a Conventional Commit:
+After an eligible successful gate, it reviews and stages only exact paths:
 
 - `test(scope): add phase N coverage`, with the expected RED explained when
   applicable.
-- `feat`, `fix`, or `chore` for green implementation work.
-- `fix(scope): resolve phase N validation findings` after green remediation and
-  passing fresh re-verification.
+- One intent-based `feat`, `fix`, or `chore` commit for the exact accumulated
+  implementation/remediation path union after phase-safe verification.
 - `docs(scope): document phase N execution` for final documentation.
 
-Commit bodies record the stage, task IDs, files, validation, expected failures
-when applicable, and prior SHA. Verifiers never commit, and the orchestrator
-never pushes.
+Commit bodies record task IDs, files, baseline comparison, validation,
+remediation, deferred and expected failures when applicable, and prior SHA.
+Baseline/verifier workers never commit, and the orchestrator never pushes.
 
 Use `--no-commit` or clear wording such as "do not commit" to opt out. In that
 case, every stage and gate still runs, the parent tracks a manifest per stage,

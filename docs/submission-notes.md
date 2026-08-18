@@ -11,7 +11,7 @@ Extension Name: `Phase Orchestrator`
 
 Version: `2.0.0`
 
-Description: `Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.`
+Description: `Orchestrate each Spec Kit tasks.md phase through isolated regression-baseline, test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.`
 
 Author: `awasali14`
 
@@ -36,21 +36,28 @@ Tags: `workflow, implementation, orchestration, tasks`
 
 1. Selects the next workflow-incomplete phase, an explicit phase, or all
    remaining workflow-incomplete phases from an existing Spec Kit `tasks.md`.
-2. Runs context-isolated test, implementation, verification, conditional
-   remediation and re-verification, and documentation agents sequentially.
+2. Runs context-isolated regression-baseline, test, implementation,
+   verification, conditional remediation and re-verification, and documentation
+   agents sequentially.
 3. Keeps `/speckit.implement` untouched as the official implementation command.
 4. Gives each stage a compact v2 handoff and prevents workers from owning Git,
    spawning workers, running the orchestrator, or crossing phase boundaries.
-5. Uses independent read-only verification and permits at most two remediation
-   and fresh re-verification cycles.
-6. Produces phase documentation with aggregate stage reports and a durable
-   workflow-complete marker only after final verification passes.
-7. Creates parent-owned stage commits with exact-path staging and dirty-state
-   protection, with `--no-commit` retaining reviewed changes unstaged.
+5. Uses strict before/after regression attribution, typed verifier findings,
+   parent-owned dispositions, and at most two remediation/re-verification cycles.
+6. Defers only proven pre-existing, unchanged, unrelated regressions with safe
+   downstream phases; uncertainty and required scope crossing block.
+7. Produces phase documentation with aggregate evidence and a durable
+   workflow-complete marker only after a phase-safe verdict.
+8. Creates a parent-owned verified implementation/remediation commit with
+   exact-path staging and dirty-state protection; `--no-commit` keeps changes unstaged.
 
 ## Verification Record
 
 v2.0.0 pre-release verification completed on 2026-08-07:
+
+This record predates the attribution-aware baseline and deferred-finding
+changes. Their automated contract suite passes, but disposable forward testing
+must be repeated before release publication.
 
 1. All 43 unit tests passed on Python 3 with Spec Kit CLI 0.13.0. Coverage
    includes workflow completion and verification resume, empty stages,

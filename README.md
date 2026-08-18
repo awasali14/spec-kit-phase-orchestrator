@@ -1,7 +1,8 @@
 # Spec Kit Phase Orchestrator
 
-Run Spec Kit `tasks.md` phase-by-phase through isolated test, implementation,
-verification, remediation, and documentation agents with parent-owned Git.
+Run Spec Kit `tasks.md` phase-by-phase through isolated regression-baseline,
+test, implementation, verification, remediation, and documentation agents with
+parent-owned Git.
 
 Maintainer: `awasali14`
 
@@ -23,8 +24,9 @@ documentation gates preserve a reviewable execution trail.
 1. Parses an existing Spec Kit `tasks.md`.
 2. Selects `next`, `phase <number>`, or `all`.
 3. Runs one phase at a time through sequential, isolated stage agents.
-4. Runs test tasks, implementation/setup tasks, read-only verification,
-   conditional remediation with fresh re-verification, and documentation.
+4. Records a read-only pre-phase regression baseline, then runs test tasks,
+   implementation/setup tasks, independent verification, conditional
+   remediation with fresh re-verification, and documentation.
 5. Aborts with a clear message when subagents or isolated worker contexts are
    unavailable.
 6. Skips empty test or implementation stages, but always verifies and
@@ -32,7 +34,7 @@ documentation gates preserve a reviewable execution trail.
 7. Marks assigned task checkboxes only after the owning stage passes its gate.
 8. Records exact-path manifests, validation results, commit SHAs, and a durable
    workflow-complete documentation marker.
-9. Lets the parent create eligible per-stage commits after strict gates.
+9. Defers implementation/remediation commits until a phase-safe verifier verdict.
 
 ## What It Does Not Do
 
@@ -83,15 +85,14 @@ Use a custom documentation directory:
 Without a custom location, generated Markdown phase documents go under
 `Documentation/{feature-slug}/`.
 
-By default, the parent orchestrator records a HEAD and working-tree baseline
-before every stage, reviews its manifest, stages exact eligible paths, and
-creates a Conventional Commit after that stage's gate passes. Test commits may
-be intentionally RED only when failures are caused by missing assigned
-implementation. Implementation must run the complete focused phase-test gate,
-including tests authored by the preceding test stage, when present, and any
-other relevant phase-scoped tests, and reach green.
-Remediation is committed only after its focused gate and fresh re-verification
-both pass.
+By default, the parent orchestrator records HEAD and the working-tree state
+before every stage and launches a fresh read-only regression-baseline worker
+before phase mutations. Test commits may be intentionally RED only when
+failures are caused by missing assigned implementation. Implementation and
+remediation manifests remain unstaged until a fresh verifier returns a
+phase-safe verdict; the parent then commits their exact accumulated path union once.
+A strictly proven pre-existing, unrelated, unchanged regression may be
+recorded as a deferred finding without hiding it from phase documentation.
 
 To run every stage and gate while leaving all reviewed changes unstaged and
 uncommitted, add `--no-commit` or clearly say not to commit:
@@ -176,16 +177,18 @@ Supporting scripts and reference templates remain under
 
 1. Official `/speckit.implement` remains untouched.
 2. Only the selected phase should be implemented.
-3. Test, implementation, remediation, verification, and documentation gates
-   must pass before a phase is workflow-complete.
-4. Verification is read-only and always runs in a fresh context; at most two
-   remediation and re-verification cycles are permitted.
+3. Regression-baseline, test, implementation, remediation, verification, and
+   documentation contracts must be satisfied before workflow completion.
+4. Baseline and final verification are read-only and run in fresh contexts;
+   every remediation result is re-verified and at most two cycles are permitted.
 5. Phase documentation preserves aggregate stage results and the durable
    workflow-complete marker.
 6. Unrelated/generated artifacts and overlap with pre-existing dirty files
    stop the workflow; unrelated pre-existing files remain untouched.
 7. Workers never stage, commit, push, spawn workers, rerun the orchestrator, or
    cross phase boundaries. The parent alone owns exact-path Git operations.
+8. Suspected blockers are independently classified; uncertain attribution or
+   unproven downstream safety stops the workflow.
 
 ## Examples
 

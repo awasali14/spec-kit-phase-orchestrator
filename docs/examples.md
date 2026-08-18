@@ -148,7 +148,10 @@ every gate for one phase before starting the next.
 
 ## Representative Stage Handoffs
 
-The parent records the baseline, then converts the parser result into compact,
+The parent records the Git baseline and launches a fresh read-only
+regression-baseline worker before phase mutations. It records exact suitable regression
+commands, a compact environment fingerprint, failing test identities, and
+material failure signatures, then converts the parser result into compact,
 role-specific handoffs. A shortened test handoff looks like this:
 
 ```text
@@ -166,18 +169,22 @@ infrastructure, or unrelated failures.
 
 After the parent reviews and, by default, commits eligible test changes, the
 implementation handoff contains `T007`, `T008`, relevant paths, the prior SHA,
-test manifest, validation summary, and expected RED. It instructs the agent to
-inspect committed tests directly and run the complete focused phase-test gate,
-including tests authored by the preceding test stage, when present, and any
-other relevant phase-scoped tests, until it passes.
+test manifest, baseline evidence, validation summary, and expected RED. It
+instructs the agent to inspect committed tests directly and run the complete
+focused phase-test gate. Its manifest remains uncommitted; an unresolved result
+continues to the verifier with typed suspected findings.
 
-The verifier receives only the phase scope, manifests, SHAs, and validation
-summaries. It must remain read-only and return structured focused,
-independent-phase, and suitable regression results. On failure, remediation
-receives the findings and attempt number; a fresh verifier checks the result.
-After two failed remediation/re-verification cycles, the workflow stops with
-all remediation changes uncommitted. A remediation commit is created only after
-fresh re-verification passes.
+The verifier receives only the phase scope, manifests, SHAs, baseline evidence,
+deferred findings, and validation summaries. It remains read-only, reruns exact
+baseline commands, and returns typed focused, independent-phase, regression,
+attribution, and disposition evidence. A phase-introduced regression is first
+remediated within scope. A pre-existing failure is deferred only when it is
+unchanged, unrelated, and safe for remaining phases. Uncertainty blocks.
+
+Every remediation result, including unresolved focused validation, receives a
+fresh verifier. After two non-phase-safe cycles, the workflow stops with all
+implementation/remediation changes uncommitted. After a phase-safe verdict, the
+parent creates one intent-based commit for their exact accumulated path union.
 
 Only the documentation handoff contains the execution-document and Mermaid
 instructions. Every worker is forbidden to stage, commit, push, spawn workers,
@@ -192,22 +199,25 @@ After the staged workflow completes Phase 3 successfully:
 1. `T005`–`T008` are checked in `tasks.md` only after focused validation.
 2. Focused tests are reported with their exact commands and results, for
    example `npm test -- applicationDocumentWorkspaceRoute` — passed.
-3. A fresh read-only verifier passes focused, independent-phase, and suitable
-   regression validation.
+3. A fresh read-only verifier passes focused and independent-phase validation
+   and either passes regression validation or strictly proves and records a
+   deferrable pre-existing regression.
 4. The resolved Markdown execution document records aggregate stage reports,
    exact-path manifests, SHAs, validation, caveats, remediation history, the
    required styled Mermaid flow, and
    `<!-- phase-orchestrator:workflow-complete v2 -->`.
-5. By default, the parent creates only eligible exact-path stage commits, for
-   example test coverage, green implementation, and final documentation.
+5. By default, the parent creates only eligible exact-path commits: test
+   coverage, one verified intent-based implementation/remediation commit, and
+   final documentation.
 6. With `--no-commit`, the same stages and gates run with per-stage manifests,
    but accumulated reviewed changes remain unstaged and uncommitted.
 
-Empty test or implementation stages are skipped; fresh verification and
-documentation are never skipped. Unsafe RED failures, a third remediation
-need, missing final documentation, generated/unrelated artifacts, or overlap
-with a pre-existing dirty file stop the workflow. In `all` mode, no later
-phase starts after that failure.
+Empty test or implementation stages are skipped; baseline verification, fresh
+final verification, and documentation are never skipped. Unsafe RED failures,
+uncertain regression attribution, unproven downstream safety, required scope
+crossing, a third remediation need, missing final documentation,
+generated/unrelated artifacts, or overlap with a pre-existing dirty file stop
+the workflow. In `all` mode, no later phase starts after that failure.
 
 For a phase containing only test-authoring tasks, correctly executing failures
 attributable solely to implementation outside that phase are accepted as

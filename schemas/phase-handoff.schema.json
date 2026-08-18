@@ -24,7 +24,7 @@
       "const": "2.0.0"
     },
     "stage": {
-      "enum": ["test", "implementation", "verification", "remediation", "documentation"]
+      "enum": ["baseline_verification", "test", "implementation", "verification", "remediation", "documentation"]
     },
     "tasks_path": {
       "type": "string",
@@ -85,6 +85,14 @@
           "items": {"$ref": "#/$defs/validation_result"}
         }
       }
+    },
+    "regression_baseline": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/comparison_evidence"}
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
     },
     "expected_failures": {
       "type": "array",
@@ -177,6 +185,22 @@
   },
   "allOf": [
     {
+      "if": {"properties": {"stage": {"const": "baseline_verification"}}},
+      "then": {
+        "properties": {
+          "assigned_task_ids": {"maxItems": 0},
+          "remediation_attempt": {"const": 0},
+          "scope": {"properties": {"read_only": {"const": true}}},
+          "commit_eligibility": {
+            "properties": {
+              "eligible": {"const": false},
+              "change_kind": {"const": "none"}
+            }
+          }
+        }
+      }
+    },
+    {
       "if": {"properties": {"stage": {"enum": ["test", "implementation"]}}},
       "then": {"properties": {"assigned_task_ids": {"minItems": 1}}}
     },
@@ -200,7 +224,26 @@
       "then": {
         "properties": {
           "remediation_attempt": {"minimum": 1, "maximum": 2},
-          "scope": {"properties": {"read_only": {"const": false}}}
+          "scope": {"properties": {"read_only": {"const": false}}},
+          "commit_eligibility": {
+            "properties": {
+              "eligible": {"const": false},
+              "change_kind": {"const": "none"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "implementation"}}},
+      "then": {
+        "properties": {
+          "commit_eligibility": {
+            "properties": {
+              "eligible": {"const": false},
+              "change_kind": {"const": "none"}
+            }
+          }
         }
       }
     },
@@ -225,19 +268,6 @@
       }
     },
     {
-      "if": {
-        "properties": {
-          "stage": {"enum": ["implementation", "remediation"]},
-          "commit_eligibility": {"properties": {"eligible": {"const": true}}}
-        }
-      },
-      "then": {
-        "properties": {
-          "validation": {"properties": {"verdict": {"const": "passed"}}}
-        }
-      }
-    },
-    {
       "if": {"properties": {"stage": {"const": "documentation"}}},
       "then": {
         "required": ["documentation"],
@@ -249,6 +279,98 @@
     }
   ],
   "$defs": {
+    "comparison_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "environment_fingerprint",
+        "status",
+        "failing_tests",
+        "failure_signatures"
+      ],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "environment_fingerprint": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "not_run"]},
+        "failing_tests": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "failure_signatures": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "gate",
+        "disposition",
+        "attribution",
+        "confidence",
+        "summary",
+        "related_task_ids",
+        "affected_paths",
+        "baseline_evidence",
+        "current_evidence",
+        "downstream_safe"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {
+          "enum": [
+            "defective_test",
+            "phase_scoped_failure",
+            "phase_introduced_regression",
+            "preexisting_unrelated_regression",
+            "cross_phase_dependency",
+            "inconclusive"
+          ]
+        },
+        "gate": {"enum": ["focused", "independent_phase", "regression", "scope"]},
+        "disposition": {"enum": ["remediate", "defer", "block"]},
+        "attribution": {
+          "enum": [
+            "phase_introduced",
+            "preexisting_unrelated",
+            "uncertain",
+            "not_applicable"
+          ]
+        },
+        "confidence": {"enum": ["confirmed", "uncertain"]},
+        "summary": {"type": "string", "minLength": 1},
+        "related_task_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^T[0-9]+$"},
+          "uniqueItems": true
+        },
+        "affected_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "baseline_evidence": {
+          "oneOf": [
+            {"$ref": "#/$defs/comparison_evidence"},
+            {"type": "null"}
+          ]
+        },
+        "current_evidence": {
+          "oneOf": [
+            {"$ref": "#/$defs/comparison_evidence"},
+            {"type": "null"}
+          ]
+        },
+        "downstream_safe": {"type": ["boolean", "null"]}
+      }
+    },
     "manifest_entry": {
       "type": "object",
       "additionalProperties": false,

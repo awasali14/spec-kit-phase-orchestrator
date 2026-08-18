@@ -19,6 +19,8 @@ Independent phase test: [INDEPENDENT_TEST_OR_NONE]
 Prior commit SHA: [PRIOR_SHA]
 Prior reviewed manifest: [PRIOR_MANIFEST_SUMMARY_OR_NONE]
 Prior validation summary: [PRIOR_VALIDATION_SUMMARY_OR_NONE]
+Regression baseline: [REGRESSION_BASELINE_OR_UNAVAILABLE]
+Deferred findings: [DEFERRED_FINDINGS_OR_NONE]
 Expected failures: [EXPECTED_FAILURES_OR_NONE]
 Remediation attempt: [REMEDIATION_ATTEMPT_OR_ZERO]
 Commit eligibility: [COMMIT_ELIGIBILITY_AND_REQUIREMENTS]
@@ -45,7 +47,31 @@ Operational notes: [STAGE_RELEVANT_TOOL_NOTES_OR_NONE]
 ```
 
 The parent owns Git and supplies only phase/task identifiers, relevant paths,
-compact manifests, validation summaries, expected failures, and the prior SHA.
+compact manifests, validation summaries, regression-baseline evidence, deferred
+findings, expected failures, and the prior SHA.
+
+## Regression Baseline Role
+
+Append only for `stage: baseline_verification`:
+
+```text
+Operate strictly read-only before phase mutations. Do not edit, create, delete,
+format, or generate repository files, including task checkboxes, snapshots,
+caches, coverage, or reports. You are never commit eligible and have no assigned
+task IDs.
+
+Identify suitable regression commands from the phase scope, repository
+configuration, and existing validation. Use non-writing settings. For each
+command record its exact text, status, a compact non-secret environment
+fingerprint, failing test identities, and normalized material failure
+signatures. Do not include secrets, raw logs, timestamps, durations, or other
+unstable output in a signature.
+
+A failing baseline is evidence, not a stage failure. Return
+`baseline_recorded` when the report and read-only gate are valid. Record
+unavailable or non-comparable evidence explicitly; do not infer that a later
+failure was pre-existing without a comparable baseline.
+```
 
 ## Test Role
 
@@ -86,10 +112,12 @@ unrelated coverage or change completed phase work.
 Run the complete focused phase-test gate, including tests authored by the
 preceding test stage, when present, and any other relevant phase-scoped tests.
 Fix phase-scoped implementation failures and require green results before
-marking assigned checkboxes. If a defective test or an out-of-scope requirement
-prevents green results, report the blocker instead of changing completed test
-work or crossing the phase boundary. Leave failed changes and checkboxes
-ineligible for a parent commit.
+marking assigned checkboxes. If green cannot be reached or a defective test,
+cross-phase requirement, or other unresolved cause is suspected, return
+`unresolved` with typed findings instead of changing completed test work or
+crossing the phase boundary. Your suspicion is not a final blocker decision.
+All implementation changes remain ineligible for a parent commit until a fresh
+verifier returns a phase-safe verdict.
 ```
 
 ## Verification Role
@@ -104,9 +132,27 @@ reports. Independently inspect the phase diff and run non-writing validation.
 Return a structured verdict with separate focused, independent-phase, and
 suitable regression results. For each result include command, status, and a
 short finding. Report changed-path scope and any unrelated or generated
-artifacts. Use verdict passed only when required validation passes and the
-phase satisfies its task and scope contract. A verifier is never commit
-eligible.
+artifacts. You own technical attribution and propose `remediate`, `defer`, or
+`block`; the parent owns the final transition after downstream-safety and
+attempt-cap policy. A verifier is never commit eligible.
+
+Rerun every exact regression-baseline command in a comparable environment. A
+baseline pass followed by a failure, an additional failing test identity, or a
+materially changed failure signature is phase introduced or worsened. Classify
+it as `phase_introduced_regression` and use disposition `remediate` when an
+in-scope repair is possible; otherwise use `block`.
+
+Use `preexisting_unrelated_regression` with proposed disposition `defer` only
+when the same command and comparable environment show identical failing test
+identities and material signatures, no new failure, passing focused and
+independent-phase validation, and confirmed attribution. Return
+`downstream_safe: null`; the
+parent changes it to true only after checking the remaining phase queue, or
+changes the disposition to `block` when safety is not proven. Use
+`inconclusive` with disposition `block` when baseline, attribution, or
+comparison evidence is missing, non-comparable, contradictory, or uncertain.
+A phase-safe verdict is `passed` or `passed_with_deferred_findings` after parent
+acceptance.
 
 For a test-authoring-only phase with no implementation tasks, a correctly
 executing RED result attributable only to implementation outside this phase
@@ -124,20 +170,23 @@ it is useful for the assigned remediation.
 
 Resolve only the final verifier's phase-scoped findings. You may change
 phase-scoped code, tests, fixtures, and assigned task checkboxes when the report
-requires them. Do not broaden scope or perform opportunistic cleanup.
+requires them. Change a completed phase-scoped test only when the verifier
+classified it as defective, and preserve the requirement rather than weakening
+the assertion. Do not broaden scope or perform opportunistic cleanup.
 
-Run focused validation and require green results. Do not run the full
-independent-phase or regression gates; the parent's fresh verifier owns them.
-Report each supplied finding as resolved or unresolved. A green, scope-clean
-remediation manifest remains unstaged and uncommitted until the parent's fresh
-read-only verifier passes. Stop after this attempt; the parent launches that
-verifier and enforces the two-attempt cap.
+Run focused validation. Do not run the full independent-phase or regression
+gates; the parent's fresh verifier owns them. Report each supplied finding as
+resolved or unresolved. Return `unresolved` for a red result or suspected
+outside-scope cause; do not make the final blocker decision. Every scope-clean
+remediation manifest remains unstaged and uncommitted. Stop after this attempt;
+the parent always launches a fresh read-only verifier and enforces the
+two-attempt cap.
 ```
 
 ## Documentation Role
 
-Append only for `stage: documentation` and only after final verification has
-passed:
+Append only for `stage: documentation` and only after a phase-safe final
+verification:
 
 ```text
 Modify only this phase execution document: [DOCUMENTATION_PATH]
@@ -147,45 +196,85 @@ Read `.specify/extensions/phase-orchestrator/references/mermaid-style.md` and
 copy its required classDef and linkStyle lines exactly into the Phase Flow
 diagram unless the user explicitly opted out of Mermaid.
 
-Use the supplied aggregate stage reports, commit SHAs, manifests, validation,
-expected RED findings, and remediation history. Do not modify source, tests,
-fixtures, tasks.md, or any other documentation. Write the durable workflow-
-complete marker only after recording the passing final verification. Do not
-rerun tests, implementation checks, independent-phase commands, or regression
-commands; treat the fresh verifier's supplied results as evidence. Validate
-only the target document's structure, marker, Mermaid contract, and exact-path
-diff without generating repository files.
+Use the supplied aggregate stage reports, commit SHAs, manifests,
+regression-baseline comparisons, validation, expected RED findings, deferred
+findings, and remediation history. Do not modify source, tests, fixtures,
+tasks.md, or any other documentation. Write the durable workflow-complete
+marker only after
+recording a final `passed`, `passed_with_deferred_findings`, or accepted
+test-authoring-only `expected_red` verdict. Do not rerun tests, implementation
+checks, independent-phase commands, or regression commands; treat the fresh
+verifier's supplied results as evidence. Validate only the target document's
+structure, marker, Mermaid contract, and exact-path diff without generating
+repository files.
 ```
 
 Do not route the phase-document path, phase-document template, Mermaid
-instructions, or aggregate execution narrative to test, implementation,
-verification, or remediation agents.
+instructions, or aggregate execution narrative to baseline-verification, test,
+implementation, verification, or remediation agents.
 
 ## Structured Report
 
 Require every stage to return this lightweight contract. `stage`,
 `phase_number`, `status`, `changed_paths`, `validation`, and `commit_eligible`
 are always required. `expected_failures`, `findings`, and `caveats` may be
-empty or omitted. Other contextual fields may be omitted when they do not
-apply. This report is not governed by `phase-handoff.schema.json`, which covers
-the parent-to-worker handoff.
+empty or omitted. Every non-empty finding must contain all typed fields shown
+below. Other contextual fields may be omitted when they do not apply. This
+report is not governed by `phase-handoff.schema.json`, which covers the
+parent-to-worker handoff. The parent stops when required report or finding
+evidence is missing, contradictory, or incompatible with the disposition.
 
 ```json
 {
-  "stage": "test|implementation|verification|remediation|documentation",
+  "stage": "baseline_verification|test|implementation|verification|remediation|documentation",
   "phase_number": 3,
   "assigned_task_ids": ["T007"],
-  "status": "passed|expected_red|failed|no_changes",
+  "status": "baseline_recorded|passed|passed_with_deferred_findings|expected_red|unresolved|blocked|failed|no_changes",
   "changed_paths": [],
   "validation": [
     {"kind": "focused|independent_phase|regression", "command": "...", "status": "passed|expected_red|failed|not_run", "summary": "..."}
   ],
   "expected_failures": [],
-  "findings": [],
+  "findings": [
+    {
+      "id": "F1",
+      "kind": "defective_test|phase_scoped_failure|phase_introduced_regression|preexisting_unrelated_regression|cross_phase_dependency|inconclusive",
+      "gate": "focused|independent_phase|regression|scope",
+      "disposition": "remediate|defer|block",
+      "attribution": "phase_introduced|preexisting_unrelated|uncertain|not_applicable",
+      "confidence": "confirmed|uncertain",
+      "summary": "...",
+      "related_task_ids": ["T007"],
+      "affected_paths": ["src/example.js"],
+      "baseline_evidence": {
+        "command": "...",
+        "environment_fingerprint": "...",
+        "status": "passed|failed|not_run",
+        "failing_tests": [],
+        "failure_signatures": []
+      },
+      "current_evidence": {
+        "command": "...",
+        "environment_fingerprint": "...",
+        "status": "passed|failed|not_run",
+        "failing_tests": [],
+        "failure_signatures": []
+      },
+      "downstream_safe": null
+    }
+  ],
   "commit_eligible": false,
   "caveats": []
 }
 ```
+
+Use `null` evidence only when the finding is not a regression and the comparison
+does not apply. `downstream_safe` is `true`, `false`, or `null` while
+the parent decision is pending. An accepted deferred finding requires confirmed
+attribution, comparable non-empty baseline and current evidence, and
+`downstream_safe: true`. An uncertain finding must use disposition `block`.
+Never include secrets, raw logs, timestamps, durations, or other unstable data
+in an environment fingerprint or failure signature.
 
 Do not include raw logs or full reasoning traces. Include only the evidence the
 next stage and parent gate need.

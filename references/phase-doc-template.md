@@ -1,8 +1,9 @@
 # Phase Execution Document Template
 
 The documentation agent writes this document only after a fresh verifier
-returns a passing verdict. Replace every placeholder. Do not write the final
-marker for a failed or incomplete workflow.
+returns `passed`, `passed_with_deferred_findings`, or an accepted
+test-authoring-only `expected_red` verdict. Replace every placeholder. Do not write the final
+marker for a blocked or incomplete workflow.
 
 ````markdown
 # Phase [PHASE_NUMBER]: [PHASE_TITLE]
@@ -11,7 +12,7 @@ marker for a failed or incomplete workflow.
 
 - Tasks file: `[TASKS_PATH]`
 - Completed task IDs: [COMPLETED_TASK_IDS]
-- Final verification: passed
+- Final verification: passed / passed with deferred findings / expected RED
 - Documentation path: `[DOCUMENTATION_PATH]`
 - Final commit before documentation: `[PRIOR_SHA_OR_NO_COMMIT]`
 - Commit mode: committed stages / `--no-commit`
@@ -20,11 +21,12 @@ marker for a failed or incomplete workflow.
 
 | Stage | Task IDs | Status | Commit SHA | Reviewed manifest |
 | --- | --- | --- | --- | --- |
+| Regression baseline | none | recorded / unavailable | none | read-only |
 | Test | [IDS_OR_SKIPPED] | passed / expected RED / skipped | [SHA_OR_NONE] | [PATHS_OR_NONE] |
-| Implementation | [IDS_OR_SKIPPED] | passed / skipped | [SHA_OR_NONE] | [PATHS_OR_NONE] |
-| Verification | none | passed | none | read-only |
-| Remediation | [IDS_OR_NOT_RUN] | passed / not run | [SHA_OR_NONE] | [PATHS_OR_NONE] |
-| Re-verification | none | passed / not run | none | read-only |
+| Implementation | [IDS_OR_SKIPPED] | passed / unresolved / skipped | [VERIFIED_COMMIT_SHA_OR_NONE] | [PATHS_OR_NONE] |
+| Verification | none | passed / passed with deferred findings / remediation required | none | read-only |
+| Remediation | [IDS_OR_NOT_RUN] | passed / unresolved / not run | [VERIFIED_COMMIT_SHA_OR_NONE] | [PATHS_OR_NONE] |
+| Re-verification | none | passed / passed with deferred findings / not run | none | read-only |
 | Documentation | none | complete | [PENDING_PARENT_DOCS_COMMIT] | this document |
 
 Record each remediation/re-verification cycle as its own row when one ran.
@@ -46,17 +48,29 @@ dirty files and rejected generated artifacts.
 
 | Stage | Kind | Command | Status | Notes |
 | --- | --- | --- | --- | --- |
-| [STAGE] | focused / independent phase / regression | `[COMMAND]` | passed / expected RED | [compact result] |
+| [STAGE] | focused / independent phase / regression | `[COMMAND]` | passed / expected RED / deferred failure | [compact result] |
 
 Record intentional RED failures with the missing assigned implementation that
 caused them. Record the final verifier's focused, independent-phase, and
 suitable regression results.
+
+## Regression Baseline And Attribution
+
+| Finding | Command | Baseline | Current | Attribution | Disposition | Downstream safe |
+| --- | --- | --- | --- | --- | --- | --- |
+| [FINDING_ID] | `[EXACT_COMMAND]` | [TEST_IDS_AND_SIGNATURES_OR_UNAVAILABLE] | [TEST_IDS_AND_SIGNATURES] | introduced / pre-existing unrelated / uncertain | remediated / deferred / blocked | yes / no / not applicable |
+
+For every deferred regression, record the comparable non-secret environment
+fingerprints, identical failing test identities and material signatures, lack
+of additional failures, and the parent's remaining-phase dependency check.
+Never include raw logs or secrets.
 
 ## Verification And Remediation
 
 - Initial verification findings: [SUMMARY_OR_NONE]
 - Remediation attempts used: [0_TO_2]
 - Final verification findings: [PASSING_SUMMARY]
+- Deferred findings: [CONFIRMED_FINDINGS_OR_NONE]
 - Remaining validation gaps: [NONE_OR_EXPLICIT_GAPS]
 
 ## Phase Flow
@@ -75,22 +89,25 @@ flowchart LR
 
   subgraph Build["Staged build"]
     direction TB
-    A["Tests"]:::node
-    B["Implementation"]:::node
+    A["Regression baseline"]:::node
+    B["Tests"]:::node
+    C["Implementation"]:::node
   end
 
   subgraph Gate["Independent gate"]
     direction TB
-    C["Verification"]:::node
-    D["Remediation if needed"]:::node
-    E["Fresh verification"]:::node
+    D["Verification"]:::node
+    E["Remediation if needed"]:::node
+    F["Fresh verification"]:::node
   end
 
-  F["Execution document"]:::node
-  A --> B --> C
-  C -->|fail| D --> E
-  C -->|pass| F
-  E -->|pass| F
+  G["Verified commit"]:::node
+  H["Execution document"]:::node
+  A --> B --> C --> D
+  D -->|remediate| E --> F
+  D -->|phase-safe| G
+  F -->|phase-safe| G
+  G --> H
   class Build,Gate outer
 ```
 
@@ -103,5 +120,6 @@ follow-up work. Write `None` only when there are no caveats.
 ````
 
 The exact final HTML comment is the durable workflow-complete marker consumed
-by `scripts/phase_tasks.py`. Its presence means the document records a passing
-fresh verification; it is not merely a documentation-exists flag.
+by `scripts/phase_tasks.py`. Its presence means the document records a
+phase-safe fresh verification, including any strictly proven deferred findings;
+it is not merely a documentation-exists flag.

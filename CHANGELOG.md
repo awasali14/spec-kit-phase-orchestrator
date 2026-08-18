@@ -24,6 +24,12 @@
 8. Replaced the nonexistent stage-report schema assumption with a lightweight
    required-field contract and deferred remediation commits until fresh
    re-verification passes.
+9. Added a fresh read-only pre-phase regression baseline, typed verifier
+   attribution, parent-owned finding dispositions, strict pre-existing
+   regression comparison, and conservative downstream-safety checks.
+10. Routed unresolved implementation and every remediation result through fresh
+    verification, and deferred the exact accumulated implementation/remediation
+    commit until a phase-safe verdict.
 
 ## 1.0.0 - 2026-06-03
 

@@ -1,5 +1,5 @@
 ---
-description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run Spec Kit tasks.md through isolated test, implementation, verification, remediation, and documentation agents with parent-owned gated commits."
+description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run Spec Kit tasks.md through isolated regression-baseline, test, implementation, verification, remediation, and documentation agents with parent-owned gated commits."
 ---
 
 # Spec Kit Phase Orchestrator 2.0
@@ -33,8 +33,9 @@ stage transition, remediation count, and `all` queue decision.
    or cross phase boundaries.
 3. Give later agents only compact structured handoffs: phase/task IDs,
    relevant paths, prior SHA, reviewed manifest, validation summaries,
-   expected failures, and remediation attempt. Never pass full traces,
-   transcripts, parent plans, or another role's instructions.
+   regression-baseline evidence, deferred findings, expected failures, and
+   remediation attempt. Never pass full traces, transcripts, parent plans, or
+   another role's instructions.
 4. The parent may commit but must never push.
 5. Stop when isolated agents are unavailable. Do not collapse the stages into
    the parent context.
@@ -125,10 +126,12 @@ and `schemas/phase-handoff.schema.json` contract v2 as the source of truth for
 the parent-to-worker handoff. The schema does not govern the worker's stage
 report. Every report must include `stage`, `phase_number`, `status`,
 `changed_paths`, `validation`, and `commit_eligible`; `expected_failures`,
-`findings`, and `caveats` may be empty or omitted. Populate `stage`, assigned
+`findings`, and `caveats` may be empty or omitted. Every non-empty finding must
+use the typed finding contract in the worker prompt. Populate `stage`, assigned
 IDs, phase scope, relevant paths, prior SHA, prior manifest and validation,
-expected failures, remediation attempt, and conditional commit eligibility.
-Sanitize the prompt and append only the chosen role section.
+regression-baseline evidence, deferred findings, expected failures,
+remediation attempt, and conditional commit eligibility. Sanitize the prompt
+and append only the chosen role section.
 
 Route and require official `/speckit.implement` or `$speckit-implement`
 discipline for both test and implementation stages. Route it to remediation
@@ -144,17 +147,24 @@ the phase document path/template or Mermaid instructions.
 Run this state machine for one selected phase:
 
 ```text
-test when non-empty
+baseline_verification before mutation, or durable baseline reuse on resume
+  -> test when non-empty
   -> implementation when non-empty
   -> verification (always, fresh, read-only)
   -> remediation on failure
-  -> verification (fresh, read-only)
-  -> documentation after final pass (always)
+  -> verification after every remediation result (fresh, read-only)
+  -> verified implementation/remediation commit when eligible
+  -> documentation after a phase-safe pass (always)
 ```
 
-Skip an empty test or implementation stage. Always verify and document.
+Skip an empty test or implementation stage. Establish the regression baseline
+before the first mutating stage of each phase, then always verify and document.
 Starting from parser `next_stage` may skip already completed task stages, but
-must still run a fresh verification before documentation.
+must still run a fresh verification before documentation. On a resumed phase,
+reuse durable pre-change evidence when available. Otherwise record the
+baseline as unavailable; do not run current-state validation and mislabel it
+as a pre-phase baseline. Later regression failures then have uncertain
+attribution and cannot be deferred.
 
 When a phase contains test-authoring tasks but no implementation tasks, do not
 broaden the phase to make intentional RED tests green. A correctly executing
@@ -162,6 +172,27 @@ RED result attributable only to implementation outside the phase satisfies the
 test-authoring-only phase contract. The final verifier records the affected
 validation as `expected_red`, returns an overall passing phase verdict, skips
 remediation, and permits documentation.
+
+### Regression Baseline Stage
+
+Launch a fresh `baseline_verification` agent before phase mutations.
+
+1. Make it strictly read-only and never commit eligible. Assign no task IDs and
+   set `remediation_attempt` to `0`.
+2. Identify suitable regression commands from the phase scope, repository
+   configuration, and existing validation. Run them with non-writing settings
+   and record the exact command, a compact non-secret environment fingerprint,
+   status, failing test identities, and normalized material failure signatures.
+3. A pre-existing regression does not stop this stage. Record unavailable or
+   non-comparable baseline evidence explicitly and continue; it makes any later
+   failure of that command ineligible for deferral.
+4. Preserve this evidence through every later handoff in the phase. The final
+   verifier must rerun the exact baseline commands; it may add other suitable
+   regression commands, but a newly failing command without comparable baseline
+   evidence has uncertain attribution.
+5. Stop only for the normal safety and contract violations, including mutation,
+   an invalid report, or unavailable isolation. A baseline result is evidence,
+   not a passing gate.
 
 ### Test Stage
 
@@ -204,69 +235,107 @@ Assign only incomplete `implementation_tasks`.
    checkboxes after the complete focused phase-test gate passes.
 3. The complete focused gate must include tests authored by the preceding test
    stage, when present, and any other relevant phase-scoped tests. Require green
-   results. The agent fixes phase-scoped implementation failures before
-   returning; a defective test or a requirement outside the phase is reported
-   as a blocker rather than changing completed test work or crossing scope.
-   Failed implementation changes are not commit eligible; stop with them
-   unstaged.
-4. Review the exact manifest. With commits enabled, stage exact paths and use
-   the appropriate `feat(<scope>):`, `fix(<scope>):`, or `chore(<scope>):`
-   subject. The body must record stage, task IDs, exact files, green validation,
-   and prior SHA.
+   results when it can. If it cannot reach green or suspects a defective test,
+   cross-phase requirement, or other unresolved cause, return `unresolved` with
+   typed findings instead of changing completed test work or crossing scope.
+   The worker's suspicion is not a final blocker decision.
+4. Review the exact manifest and keep all implementation changes unstaged and
+   uncommitted, whether the focused gate is green or unresolved. Treat that
+   reviewed manifest as known phase state for the read-only verifier. Do not
+   mark unchecked implementation tasks when the focused gate did not pass.
+5. Implementation becomes commit eligible only after a phase-safe final
+   verification. The parent later stages the exact accumulated implementation
+   and remediation path union and selects `feat(<scope>):`, `fix(<scope>):`, or
+   `chore(<scope>):` from the assigned task intent.
 
 ### Verification Stage
 
-Launch a fresh verification agent after task stages and after every successful
-remediation.
+Launch a fresh verification agent after task stages and after every remediation
+result, including `unresolved` or failed focused validation.
 
 1. Make it strictly read-only. It must not modify checkboxes, source, tests,
    snapshots, caches, coverage, reports, or documentation.
 2. Require a structured report with separate focused, independent-phase, and
    suitable regression results, plus scope/artifact findings and one verdict.
+   The verifier, not an implementation or remediation worker, owns technical
+   attribution and proposes `remediate`, `defer`, or `block`; the parent applies
+   downstream-safety and attempt-cap policy to the final transition.
 3. Confirm the working tree and index exactly match the pre-verification
    baseline. Reject any verifier-created path. A verifier never commits.
-4. On an overall pass, including an accepted test-authoring-only expected RED,
-   continue to documentation. On failure, continue to remediation if fewer than
-   two remediation attempts have run and the findings can be resolved within
-   phase scope. Otherwise stop without broadening the phase.
+4. Compare every baseline regression command using the same command and a
+   comparable environment. A regression is phase introduced or worsened when
+   the baseline passed but the current command fails, or when the current result
+   adds failing test identities or materially changes a baseline failure
+   signature. Send it to remediation when an in-scope repair is possible.
+5. Classify a regression as `preexisting_unrelated_regression` with proposed
+   disposition `defer` only when its failing test identities and material
+   signatures are unchanged, no failures were added, focused and
+   independent-phase validation pass, and attribution evidence is confirmed.
+   Return `downstream_safe: null` until the parent checks the remaining queue.
+   Missing, non-comparable, or contradictory evidence is `inconclusive` and
+   blocks.
+6. Before accepting `defer`, the parent reruns the parser in `all` mode for
+   metadata and compares the finding's affected paths and components with every
+   later queued workflow-incomplete phase's task text and paths, purpose,
+   checkpoint, and independent test; exclude the current selected phase, which
+   remains parser-incomplete until documentation. When no later queued phase
+   exists, downstream safety is satisfied. Any dependency, overlap, missing
+   metadata, or ambiguity sets `downstream_safe` to false, changes the
+   disposition to `block`, and stops. When the check passes, set
+   `downstream_safe` to true, accept the deferral, and record it immediately for
+   documentation and the final aggregate report.
+7. On `passed`, `passed_with_deferred_findings`, or an accepted
+   test-authoring-only `expected_red`, continue to the verified commit gate. On
+   `remediate`, launch remediation when fewer than two attempts have run. On
+   `block`, or when no attempt remains, stop without broadening the phase.
 
 ### Remediation And Fresh Re-verification
 
 1. Launch a fresh remediation agent with only the verifier's compact findings,
-   phase scope, relevant paths, validation summary, prior SHA/manifest, and
-   attempt number.
+   phase scope, relevant paths, baseline comparison, validation summary, prior
+   SHA/manifest, deferred findings, and attempt number.
 2. It may change phase-scoped code, tests, fixtures, and necessary phase task
-   checkboxes. It must not broaden scope.
-3. Require its focused validation to pass before fresh re-verification. Reserve
-   the full independent-phase and regression gates for the fresh verifier.
-   Failed remediation changes remain unstaged and uncommitted, and the
-   workflow stops.
-4. After focused validation passes, review the exact remediation manifest but
-   keep it unstaged and uncommitted. Launch a fresh read-only verifier against
-   that reviewed working-tree state. If verification fails and an attempt
-   remains, treat the reviewed remediation changes as the next attempt's known
-   baseline rather than as protected unrelated work.
-5. Only after fresh re-verification passes, stage the exact accumulated
-   remediation paths and commit:
+   checkboxes. It may correct a completed phase-scoped test only when the
+   verifier classified that test as defective. It must not broaden scope or
+   weaken the requirement merely to obtain green.
+3. Run focused validation and report each supplied finding as resolved or
+   unresolved. Reserve independent-phase and regression gates for the fresh
+   verifier. A red or suspected outside-scope result returns `unresolved`; it
+   does not itself make the final stop decision.
+4. Review every scope-clean remediation manifest and keep it unstaged and
+   uncommitted. Launch a fresh read-only verifier regardless of the remediation
+   validation result. Treat reviewed remediation changes as known phase state,
+   not protected unrelated work.
+5. Each remediation plus its fresh verification consumes one attempt. Permit at
+   most two complete cycles. After attempt one, repeat only for a verifier
+   disposition of `remediate`; after attempt two, any non-phase-safe verdict
+   stops the workflow.
 
-   ```text
-   fix(<scope>): resolve phase <N> validation findings
-   ```
+### Verified Implementation Commit Gate
 
-   Record stage, affected task IDs, exact files, resolved findings, green
-   validation, remediation attempt, and prior SHA in the body.
-6. Permit at most two complete remediation/re-verification cycles. If the
-   second re-verification fails, stop and leave all remediation changes
-   unstaged and uncommitted. Earlier eligible test or implementation commits
-   may remain on the branch.
+After a phase-safe final verification:
+
+1. Review the exact union of implementation and remediation manifests. Reject
+   any path that did not pass the existing manifest and protection gates.
+2. With commits enabled, stage that exact path union once. Use the appropriate
+   `feat(<scope>):`, `fix(<scope>):`, or `chore(<scope>):` subject based on the
+   assigned implementation-task intent, not merely the presence of remediation.
+3. Record task IDs, exact files, focused and final verification, baseline
+   comparison, resolved and deferred findings, remediation count, and prior SHA
+   in the body. When no eligible paths remain, record `no_changes`.
+4. Under `--no-commit`, leave the reviewed union unstaged. On a blocking verdict
+   or exhausted cap, leave every implementation/remediation change unstaged and
+   uncommitted; an earlier eligible test commit may remain.
 
 ### Documentation Stage
 
-Launch only after the final fresh verification passes.
+Launch only after a final phase-safe verdict: `passed`,
+`passed_with_deferred_findings`, or an accepted test-authoring-only
+`expected_red`.
 
 1. Give the documentation agent aggregate compact stage reports, commit SHAs,
-   reviewed manifests, validation summaries, expected RED failures, and
-   remediation history.
+   reviewed manifests, regression-baseline comparisons, validation summaries,
+   expected RED failures, deferred findings, and remediation history.
 2. It may modify only the resolved phase execution document. It must use
    `.specify/extensions/phase-orchestrator/references/phase-doc-template.md`.
    It must not rerun source, test, independent-phase, or regression commands;
@@ -277,7 +346,7 @@ Launch only after the final fresh verification passes.
    this agent. Honor an explicit user opt-out of Mermaid.
 4. Require the exact durable marker
    `<!-- phase-orchestrator:workflow-complete v2 -->`, which may be written only
-   when the document records a passing final verification.
+   when the document records a phase-safe final verification.
 5. Re-run the parser for the same phase and require `task_complete`,
    `documentation_complete`, and `workflow_complete` all true with
    `next_stage: null`.
@@ -294,12 +363,16 @@ Launch only after the final fresh verification passes.
 ## Stop And Report
 
 Stop immediately for a dirty-path overlap, unrelated/generated change, invalid
-RED, failed implementation/remediation gate, verifier mutation, missing
-isolation, documentation mutation outside its file, or an exhausted remediation
-cap. Stop when a stage report is missing required fields, contradicts the stage
-contract, or lacks enough evidence for the parent gate.
+RED, worker or verifier mutation outside its authority, missing isolation,
+documentation mutation outside its file, or an exhausted remediation cap. Stop
+when a typed finding or stage report is missing required fields, contradicts the
+stage contract, or lacks enough evidence for the parent gate. Stop after the
+verifier confirms a required failure cannot be resolved without crossing phase
+scope, attributes a regression as uncertain, cannot prove downstream safety for
+a proposed deferral, or returns a non-phase-safe verdict after attempt two.
 
 Report selected phase, stage outcomes, task IDs, per-stage manifests, commits
-or `--no-commit`, validation summaries, expected failures, remediation count,
+or `--no-commit`, regression-baseline and attribution evidence, validation
+summaries, expected failures, deferred findings, remediation count,
 documentation path, workflow-completion state, protected unrelated files left
 untouched, and blockers. Never claim a push.
