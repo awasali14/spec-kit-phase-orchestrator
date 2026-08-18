@@ -17,6 +17,13 @@
    validation, expected-failure, scope, and commit-eligibility data.
 6. Added a durable workflow-complete phase-document marker and aggregate staged
    execution record.
+7. Required implementation workers to pass tests authored by the preceding test
+   stage, when present, and any other relevant phase-scoped tests; added scoped
+   expected-RED completion for test-authoring-only phases; and made official
+   implementation discipline mandatory in both stages.
+8. Replaced the nonexistent stage-report schema assumption with a lightweight
+   required-field contract and deferred remediation commits until fresh
+   re-verification passes.
 
 ## 1.0.0 - 2026-06-03
 

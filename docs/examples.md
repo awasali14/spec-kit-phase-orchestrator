@@ -167,14 +167,17 @@ infrastructure, or unrelated failures.
 After the parent reviews and, by default, commits eligible test changes, the
 implementation handoff contains `T007`, `T008`, relevant paths, the prior SHA,
 test manifest, validation summary, and expected RED. It instructs the agent to
-inspect committed tests directly and requires focused validation to pass.
+inspect committed tests directly and run the complete focused phase-test gate,
+including tests authored by the preceding test stage, when present, and any
+other relevant phase-scoped tests, until it passes.
 
 The verifier receives only the phase scope, manifests, SHAs, and validation
 summaries. It must remain read-only and return structured focused,
 independent-phase, and suitable regression results. On failure, remediation
 receives the findings and attempt number; a fresh verifier checks the result.
 After two failed remediation/re-verification cycles, the workflow stops with
-failed changes uncommitted.
+all remediation changes uncommitted. A remediation commit is created only after
+fresh re-verification passes.
 
 Only the documentation handoff contains the execution-document and Mermaid
 instructions. Every worker is forbidden to stage, commit, push, spawn workers,
@@ -205,3 +208,8 @@ documentation are never skipped. Unsafe RED failures, a third remediation
 need, missing final documentation, generated/unrelated artifacts, or overlap
 with a pre-existing dirty file stop the workflow. In `all` mode, no later
 phase starts after that failure.
+
+For a phase containing only test-authoring tasks, correctly executing failures
+attributable solely to implementation outside that phase are accepted as
+expected RED. Verification records the expected RED, passes the phase contract,
+and does not ask remediation to implement work from another phase.

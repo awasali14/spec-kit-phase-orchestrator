@@ -1,5 +1,8 @@
 # Usage
 
+This guide explains command selection, parser output, staged workers, validation
+gates, and parent-owned Git behavior for the phase orchestrator.
+
 Spec Kit generates a `tasks.md` file for a feature after planning. Users
 usually find it under a feature directory such as `specs/002-feature/tasks.md`.
 The file groups implementation work into phases, often including setup,
@@ -87,9 +90,13 @@ RED result only when the failure is attributable to missing assigned
 implementation. Syntax, collection, fixture, infrastructure, and unrelated
 failures stop the stage without a commit. The implementation agent inspects
 committed tests directly, or the reviewed test manifest under `--no-commit`,
-and must pass focused validation. Verification is strictly read-only and
-reports focused, independent-phase, and suitable regression validation. Failed
-remediation changes remain uncommitted.
+and must run the complete focused phase-test gate, including tests authored by
+the preceding test stage, when present, and any other relevant phase-scoped
+tests, until it passes. Verification is strictly read-only and reports focused,
+independent-phase, and suitable regression validation. A test-authoring-only
+phase may complete with attributable expected RED without out-of-scope
+remediation. Remediation changes remain uncommitted until fresh re-verification
+passes.
 
 The documentation agent receives aggregate stage reports, SHAs, and manifests;
 it changes only the resolved phase execution document and records
@@ -105,7 +112,8 @@ only exact paths before creating a Conventional Commit:
 - `test(scope): add phase N coverage`, with the expected RED explained when
   applicable.
 - `feat`, `fix`, or `chore` for green implementation work.
-- `fix(scope): resolve phase N validation findings` for green remediation.
+- `fix(scope): resolve phase N validation findings` after green remediation and
+  passing fresh re-verification.
 - `docs(scope): document phase N execution` for final documentation.
 
 Commit bodies record the stage, task IDs, files, validation, expected failures

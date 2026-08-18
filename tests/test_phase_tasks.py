@@ -27,6 +27,7 @@ WORKER_PROMPT_TEMPLATE = ROOT / "references" / "worker-prompt-template.md"
 COMMAND_FILE = ROOT / "commands" / "speckit.phase-orchestrator.phase.md"
 EXTENSION_FILE = ROOT / "extension.yml"
 AGENT_SUPPORT = ROOT / "docs" / "agent-support.md"
+USAGE = ROOT / "docs" / "usage.md"
 HANDOFF_SCHEMA = ROOT / "schemas" / "phase-handoff.schema.json"
 HANDOFF_SAMPLE = ROOT / "examples" / "sample-phase-handoff.json"
 CHANGELOG = ROOT / "CHANGELOG.md"
@@ -527,6 +528,49 @@ class PhaseTasksParserTest(unittest.TestCase):
         ]:
             self.assertIn(invalid, test_role)
 
+    def test_implementation_role_runs_preceding_phase_tests_until_green(self) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        implementation = compact(section(template, "Implementation Role"))
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for expected in [
+            "preceding test stage, when present",
+            "complete focused phase-test gate",
+            "any other relevant phase-scoped tests",
+            "Fix phase-scoped implementation failures",
+            "require green results",
+            "out-of-scope requirement",
+        ]:
+            self.assertIn(expected, implementation)
+        self.assertIn("tests authored by the preceding test stage", command)
+        self.assertIn("when present, and any other relevant phase-scoped tests", command)
+
+    def test_test_authoring_only_expected_red_passes_without_remediation(self) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        verification = compact(section(template, "Verification Role"))
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for text in [verification, command]:
+            self.assertIn("test-authoring-only", text)
+            self.assertIn("expected_red", text)
+            self.assertIn("overall passing", text)
+        self.assertIn("do not request out-of-scope remediation", verification)
+        self.assertIn("skips remediation", command)
+
+    def test_implement_discipline_is_required_for_test_and_implementation(self) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        test_role = compact(section(template, "Test Role"))
+        implementation = compact(section(template, "Implementation Role"))
+        remediation = compact(section(template, "Remediation Role"))
+        routing = compact(section(template, "Sanitization And Routing"))
+
+        for role in [test_role, implementation]:
+            self.assertIn("Use the supplied official", role)
+            self.assertIn("`/speckit.implement`", role)
+        self.assertIn("only when it is useful", remediation)
+        self.assertIn("for both test and implementation work", routing)
+        self.assertIn("for remediation only when it is useful", routing)
+
     def test_remediation_role_stops_for_fresh_verifier_and_parent_cap(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
         remediation = compact(section(template, "Remediation Role"))
@@ -535,6 +579,55 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("fresh read-only verifier", remediation)
         self.assertIn("two-attempt cap", remediation)
         self.assertIn("at most two complete", command)
+
+    def test_worker_report_uses_lightweight_required_field_contract(self) -> None:
+        template = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Structured Report",
+            )
+        )
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for field in [
+            "`stage`",
+            "`phase_number`",
+            "`status`",
+            "`changed_paths`",
+            "`validation`",
+            "`commit_eligible`",
+        ]:
+            self.assertIn(field, template)
+        self.assertIn("may be empty or omitted", template)
+        self.assertIn("not governed by `phase-handoff.schema.json`", template)
+        self.assertIn("schema does not govern the worker's stage report", command)
+        self.assertNotIn("schema-invalid report", command)
+        self.assertIn("missing required fields", command)
+        self.assertIn("contradicts the stage contract", command)
+        self.assertIn("lacks enough evidence for the parent gate", command)
+
+    def test_remediation_commit_waits_for_fresh_reverification(self) -> None:
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+        remediation = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Remediation Role",
+            )
+        )
+
+        self.assertIn("keep it unstaged and uncommitted", command)
+        self.assertIn("Only after fresh re-verification passes", command)
+        self.assertIn("stage the exact accumulated remediation paths", command)
+        self.assertIn("leave all remediation changes unstaged and uncommitted", command)
+        self.assertNotIn("failed post-commit changes", command)
+        self.assertIn("remains unstaged and uncommitted until", remediation)
+
+    def test_usage_starts_with_a_purpose_line(self) -> None:
+        lines = USAGE.read_text(encoding="utf-8").splitlines()
+
+        self.assertEqual(lines[0], "# Usage")
+        self.assertIn("This guide explains", lines[2])
+        self.assertIn("parent-owned Git behavior", " ".join(lines[2:4]))
 
     def test_command_metadata_includes_v2_trigger_friendly_skill_wording(self) -> None:
         command_text = COMMAND_FILE.read_text(encoding="utf-8")
@@ -745,7 +838,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             "exact changed-path manifest",
             "Reject unrelated paths, unexpected generated artifacts",
             "stage only those paths",
-            "stage only exact paths",
+            "stage the exact accumulated remediation paths",
             "stage that exact path",
             "Never use broad staging",
         ]:
@@ -776,7 +869,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         ]:
             self.assertIn(subject, command)
         self.assertGreaterEqual(command.count("prior SHA"), 4)
-        self.assertIn("Require green focused validation", command)
+        self.assertIn("Require green results", command)
         self.assertIn("Require its focused validation to pass", command)
 
     def test_all_mode_completes_every_gate_before_reselection(self) -> None:

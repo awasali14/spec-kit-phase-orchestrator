@@ -121,17 +121,21 @@ over every default below and must be propagated to every affected worker.
 
 Use
 `.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`
-and `schemas/phase-handoff.schema.json` contract v2 as the source of truth.
-Populate `stage`, assigned IDs, phase scope, relevant paths, prior SHA,
-prior manifest and validation, expected failures, remediation attempt, and
-conditional commit eligibility. Sanitize the prompt and append only the chosen
-role section.
+and `schemas/phase-handoff.schema.json` contract v2 as the source of truth for
+the parent-to-worker handoff. The schema does not govern the worker's stage
+report. Every report must include `stage`, `phase_number`, `status`,
+`changed_paths`, `validation`, and `commit_eligible`; `expected_failures`,
+`findings`, and `caveats` may be empty or omitted. Populate `stage`, assigned
+IDs, phase scope, relevant paths, prior SHA, prior manifest and validation,
+expected failures, remediation attempt, and conditional commit eligibility.
+Sanitize the prompt and append only the chosen role section.
 
-Route official implementation discipline, relevant skills,
-and automatically selected frontend/backend skills and MCPs only to the phase
-stages that need them. Include the selected MCPs, applicable MCP opt-outs, and
-Exa-first web-search policy in each handoff. Keep operational notes similarly
-scoped.
+Route and require official `/speckit.implement` or `$speckit-implement`
+discipline for both test and implementation stages. Route it to remediation
+only when useful. Route other relevant skills and automatically selected
+frontend/backend skills and MCPs only to the phase stages that need them.
+Include the selected MCPs, applicable MCP opt-outs, and Exa-first web-search
+policy in each handoff. Keep operational notes similarly scoped.
 Do not leak parent orchestration context. Only the documentation stage receives
 the phase document path/template or Mermaid instructions.
 
@@ -152,12 +156,21 @@ Skip an empty test or implementation stage. Always verify and document.
 Starting from parser `next_stage` may skip already completed task stages, but
 must still run a fresh verification before documentation.
 
+When a phase contains test-authoring tasks but no implementation tasks, do not
+broaden the phase to make intentional RED tests green. A correctly executing
+RED result attributable only to implementation outside the phase satisfies the
+test-authoring-only phase contract. The final verifier records the affected
+validation as `expected_red`, returns an overall passing phase verdict, skips
+remediation, and permits documentation.
+
 ### Test Stage
 
 Assign only incomplete `test_tasks`.
 
 1. The test agent may change assigned tests, explicitly assigned test-only
    support, and its task checkboxes. It must not implement production behavior.
+   It must use the supplied official `/speckit.implement` or
+   `$speckit-implement` discipline for the assigned test work.
 2. Require the complete focused gate before checkboxes are marked. Do not run
    independent-phase or regression validation in this stage; reserve those for
    the verifier.
@@ -182,13 +195,20 @@ Assign only incomplete `test_tasks`.
 
 Assign only incomplete `implementation_tasks`.
 
-1. The implementation agent inspects the reviewed tests directly: from the
-   prior commit in commit mode, or the prior reviewed manifest under
-   `--no-commit`.
+1. The implementation agent uses the supplied official `/speckit.implement` or
+   `$speckit-implement` discipline and inspects the reviewed tests directly:
+   when a test stage ran, from its commit in commit mode or its reviewed manifest
+   under `--no-commit`. When the test stage was empty, it identifies existing
+   phase-scoped tests from the assigned tasks and repository context.
 2. It implements only assigned implementation/setup tasks and marks only those
-   checkboxes after focused validation.
-3. Require green focused validation. Failed implementation changes are not
-   commit eligible; stop with them unstaged.
+   checkboxes after the complete focused phase-test gate passes.
+3. The complete focused gate must include tests authored by the preceding test
+   stage, when present, and any other relevant phase-scoped tests. Require green
+   results. The agent fixes phase-scoped implementation failures before
+   returning; a defective test or a requirement outside the phase is reported
+   as a blocker rather than changing completed test work or crossing scope.
+   Failed implementation changes are not commit eligible; stop with them
+   unstaged.
 4. Review the exact manifest. With commits enabled, stage exact paths and use
    the appropriate `feat(<scope>):`, `fix(<scope>):`, or `chore(<scope>):`
    subject. The body must record stage, task IDs, exact files, green validation,
@@ -205,8 +225,10 @@ remediation.
    suitable regression results, plus scope/artifact findings and one verdict.
 3. Confirm the working tree and index exactly match the pre-verification
    baseline. Reject any verifier-created path. A verifier never commits.
-4. On pass, continue to documentation. On failure, continue to remediation if
-   fewer than two remediation attempts have run.
+4. On an overall pass, including an accepted test-authoring-only expected RED,
+   continue to documentation. On failure, continue to remediation if fewer than
+   two remediation attempts have run and the findings can be resolved within
+   phase scope. Otherwise stop without broadening the phase.
 
 ### Remediation And Fresh Re-verification
 
@@ -215,11 +237,17 @@ remediation.
    attempt number.
 2. It may change phase-scoped code, tests, fixtures, and necessary phase task
    checkboxes. It must not broaden scope.
-3. Require its focused validation to pass before any parent commit. Reserve
+3. Require its focused validation to pass before fresh re-verification. Reserve
    the full independent-phase and regression gates for the fresh verifier.
    Failed remediation changes remain unstaged and uncommitted, and the
    workflow stops.
-4. After an eligible remediation, review and stage only exact paths. Commit:
+4. After focused validation passes, review the exact remediation manifest but
+   keep it unstaged and uncommitted. Launch a fresh read-only verifier against
+   that reviewed working-tree state. If verification fails and an attempt
+   remains, treat the reviewed remediation changes as the next attempt's known
+   baseline rather than as protected unrelated work.
+5. Only after fresh re-verification passes, stage the exact accumulated
+   remediation paths and commit:
 
    ```text
    fix(<scope>): resolve phase <N> validation findings
@@ -227,9 +255,10 @@ remediation.
 
    Record stage, affected task IDs, exact files, resolved findings, green
    validation, remediation attempt, and prior SHA in the body.
-5. Launch a fresh read-only verifier. Permit at most two complete
-   remediation/re-verification cycles. If the second re-verification fails,
-   stop and leave all failed post-commit changes unstaged and uncommitted.
+6. Permit at most two complete remediation/re-verification cycles. If the
+   second re-verification fails, stop and leave all remediation changes
+   unstaged and uncommitted. Earlier eligible test or implementation commits
+   may remain on the branch.
 
 ### Documentation Stage
 
@@ -266,8 +295,9 @@ Launch only after the final fresh verification passes.
 
 Stop immediately for a dirty-path overlap, unrelated/generated change, invalid
 RED, failed implementation/remediation gate, verifier mutation, missing
-isolation, schema-invalid report, documentation mutation outside its file, or
-exhausted remediation cap.
+isolation, documentation mutation outside its file, or an exhausted remediation
+cap. Stop when a stage report is missing required fields, contradicts the stage
+contract, or lacks enough evidence for the parent gate.
 
 Report selected phase, stage outcomes, task IDs, per-stage manifests, commits
 or `--no-commit`, validation summaries, expected failures, remediation count,

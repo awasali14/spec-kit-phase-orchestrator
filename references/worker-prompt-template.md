@@ -52,6 +52,9 @@ compact manifests, validation summaries, expected failures, and the prior SHA.
 Append only for `stage: test`:
 
 ```text
+Use the supplied official `/speckit.implement` or `$speckit-implement`
+discipline for this assigned test work.
+
 Implement only the assigned test tasks. You may edit tests, task checkboxes,
 and essential test-only support explicitly assigned to this stage. Do not
 implement production behavior or setup assigned to the implementation stage.
@@ -72,14 +75,21 @@ valid green or eligible RED gate.
 Append only for `stage: implementation`:
 
 ```text
-Inspect the reviewed tests directly from the repository. In commit mode they
-are in the prior test commit; in --no-commit mode they are identified by the
-prior reviewed manifest. Implement only assigned implementation/setup tasks.
-Do not add unrelated coverage or change completed phase work.
+Use the supplied official `/speckit.implement` or `$speckit-implement`
+discipline for this assigned implementation work. Inspect the reviewed tests
+directly from the repository. When a test stage ran, use its commit in commit
+mode or its prior reviewed manifest in --no-commit mode. If no test stage ran,
+identify existing phase-scoped tests from the assigned tasks and repository
+context. Implement only assigned implementation/setup tasks. Do not add
+unrelated coverage or change completed phase work.
 
-Run focused validation and require green results before marking assigned
-checkboxes. On failure, report the failure and leave failed changes and
-checkboxes ineligible for a parent commit.
+Run the complete focused phase-test gate, including tests authored by the
+preceding test stage, when present, and any other relevant phase-scoped tests.
+Fix phase-scoped implementation failures and require green results before
+marking assigned checkboxes. If a defective test or an out-of-scope requirement
+prevents green results, report the blocker instead of changing completed test
+work or crossing the phase boundary. Leave failed changes and checkboxes
+ineligible for a parent commit.
 ```
 
 ## Verification Role
@@ -97,6 +107,11 @@ short finding. Report changed-path scope and any unrelated or generated
 artifacts. Use verdict passed only when required validation passes and the
 phase satisfies its task and scope contract. A verifier is never commit
 eligible.
+
+For a test-authoring-only phase with no implementation tasks, a correctly
+executing RED result attributable only to implementation outside this phase
+satisfies the phase contract. Record those validation entries as expected_red,
+return an overall passing verdict, and do not request out-of-scope remediation.
 ```
 
 ## Remediation Role
@@ -104,15 +119,19 @@ eligible.
 Append only for `stage: remediation`:
 
 ```text
+Use official `/speckit.implement` or `$speckit-implement` discipline only when
+it is useful for the assigned remediation.
+
 Resolve only the final verifier's phase-scoped findings. You may change
 phase-scoped code, tests, fixtures, and assigned task checkboxes when the report
 requires them. Do not broaden scope or perform opportunistic cleanup.
 
 Run focused validation and require green results. Do not run the full
 independent-phase or regression gates; the parent's fresh verifier owns them.
-Report each supplied finding as resolved or unresolved. The parent may commit
-only a green, scope-clean remediation manifest. Stop after this attempt; the
-parent launches a fresh read-only verifier and enforces the two-attempt cap.
+Report each supplied finding as resolved or unresolved. A green, scope-clean
+remediation manifest remains unstaged and uncommitted until the parent's fresh
+read-only verifier passes. Stop after this attempt; the parent launches that
+verifier and enforces the two-attempt cap.
 ```
 
 ## Documentation Role
@@ -144,7 +163,12 @@ verification, or remediation agents.
 
 ## Structured Report
 
-Require every stage to return this compact shape; omit fields that do not apply:
+Require every stage to return this lightweight contract. `stage`,
+`phase_number`, `status`, `changed_paths`, `validation`, and `commit_eligible`
+are always required. `expected_failures`, `findings`, and `caveats` may be
+empty or omitted. Other contextual fields may be omitted when they do not
+apply. This report is not governed by `phase-handoff.schema.json`, which covers
+the parent-to-worker handoff.
 
 ```json
 {
@@ -154,7 +178,7 @@ Require every stage to return this compact shape; omit fields that do not apply:
   "status": "passed|expected_red|failed|no_changes",
   "changed_paths": [],
   "validation": [
-    {"kind": "focused|independent_phase|regression", "command": "...", "status": "passed|failed|not_run", "summary": "..."}
+    {"kind": "focused|independent_phase|regression", "command": "...", "status": "passed|expected_red|failed|not_run", "summary": "..."}
   ],
   "expected_failures": [],
   "findings": [],
@@ -173,9 +197,10 @@ next stage and parent gate need.
    and parent plans.
 2. Supply only the selected role section. Remove instructions belonging to all
    other roles.
-3. Preserve official `/speckit.implement` or `$speckit-implement` guidance only
-   for test, implementation, or remediation work where it is useful. Never
-   alter the official command.
+3. Preserve and require official `/speckit.implement` or
+   `$speckit-implement` guidance for both test and implementation work.
+   Preserve it for remediation only when it is useful. Never alter the official
+   command.
 4. Preserve relevant invoker-supplied skills and automatically selected
    frontend/backend skills and MCPs only when relevant to the stage and phase.
    Summarize already-read references instead of copying them.

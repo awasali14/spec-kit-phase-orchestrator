@@ -35,6 +35,11 @@ Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
 or continue to another phase. The parent owns baselines, manifest review,
 exact-path staging, commits, remediation-cycle control, and continuation.
 
+Every worker report always includes `stage`, `phase_number`, `status`,
+`changed_paths`, `validation`, and `commit_eligible`. Expected failures,
+findings, and caveats may be empty or omitted. This lightweight report contract
+is separate from the JSON schema used for parent-to-worker handoffs.
+
 Parent-only model and effort settings, fallback model-selection text, and
 orchestration instructions should stay with the parent. They are configuration
 for creating the worker, not phase work. Before building handoffs, the parent
@@ -46,8 +51,13 @@ and concise reference summaries.
 Only the documentation agent receives the phase-document and Mermaid
 instructions. The test agent is test-only and may produce eligible intentional
 RED changes solely when missing assigned implementation explains the failure.
-Implementation and remediation must be green before their changes are commit
-eligible. Verifiers are strictly read-only.
+The implementation agent runs the complete focused phase-test gate, including
+tests authored by the preceding test stage, when present, and any other relevant
+phase-scoped tests, and fixes phase-scoped implementation failures until green.
+A test-authoring-only phase may satisfy its contract with attributable expected
+RED; remediation must not add out-of-scope implementation. Remediation stays
+uncommitted until a fresh read-only verifier passes. Verifiers are strictly
+read-only.
 
 In `all` mode, the parent owns the queue. It completes every stage gate and
 confirms the durable workflow-complete documentation marker before starting

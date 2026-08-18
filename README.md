@@ -87,7 +87,11 @@ By default, the parent orchestrator records a HEAD and working-tree baseline
 before every stage, reviews its manifest, stages exact eligible paths, and
 creates a Conventional Commit after that stage's gate passes. Test commits may
 be intentionally RED only when failures are caused by missing assigned
-implementation; implementation and remediation commits must be green.
+implementation. Implementation must run the complete focused phase-test gate,
+including tests authored by the preceding test stage, when present, and any
+other relevant phase-scoped tests, and reach green.
+Remediation is committed only after its focused gate and fresh re-verification
+both pass.
 
 To run every stage and gate while leaving all reviewed changes unstaged and
 uncommitted, add `--no-commit` or clearly say not to commit:
