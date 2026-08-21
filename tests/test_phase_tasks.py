@@ -592,6 +592,9 @@ class PhaseTasksParserTest(unittest.TestCase):
             "unrelated",
         ]:
             self.assertIn(invalid, test_role)
+        self.assertIn("rerun the focused gate as needed", test_role)
+        self.assertIn("remains after available in-scope correction", test_role)
+        self.assertNotIn("stop, and report the gate as failed", test_role)
 
     def test_implementation_role_routes_unresolved_gate_to_verification(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
@@ -642,11 +645,28 @@ class PhaseTasksParserTest(unittest.TestCase):
         remediation = compact(section(template, "Remediation Role"))
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
 
-        self.assertIn("fresh read-only verifier", remediation)
-        self.assertIn("two-attempt cap", remediation)
+        self.assertIn("run focused validation as needed", remediation)
+        self.assertIn("remains after available in-scope remediation", remediation)
+        self.assertIn("one final remediation report and control to the parent", remediation)
+        self.assertNotIn("fresh read-only verifier", remediation)
+        self.assertNotIn("two-attempt cap", remediation)
         self.assertIn("at most two complete", command)
         self.assertIn("regardless of the remediation validation result", command)
         self.assertIn("does not itself make the final stop decision", command)
+
+    def test_verifier_prompt_omits_parent_transition_mechanics(self) -> None:
+        verification = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Verification Role",
+            )
+        )
+
+        self.assertIn("the parent owns the final transition", verification)
+        self.assertIn("`downstream_safe: null`", verification)
+        self.assertIn("parent owns the downstream-safety determination", verification)
+        self.assertNotIn("attempt-cap", verification)
+        self.assertNotIn("remaining phase queue", verification)
 
     def test_worker_report_uses_lightweight_required_field_contract(self) -> None:
         template = compact(
@@ -802,10 +822,11 @@ class PhaseTasksParserTest(unittest.TestCase):
             "[REGRESSION_BASELINE_OR_UNAVAILABLE]",
             "[DEFERRED_FINDINGS_OR_NONE]",
             "[EXPECTED_FAILURES_OR_NONE]",
-            "[REMEDIATION_ATTEMPT_OR_ZERO]",
             "[COMMIT_ELIGIBILITY_AND_REQUIREMENTS]",
         ]:
             self.assertIn(placeholder, common)
+        self.assertNotIn("Remediation attempt", common)
+        self.assertNotIn("REMEDIATION_ATTEMPT", common)
         self.assertNotIn("SANITIZED_PARENT_CONTEXT", common)
         self.assertIn("Do not reconstruct or request full parent traces", common)
 
@@ -836,7 +857,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="baseline_verification",
             assigned_task_ids=[],
             expected_failures=[],
-            remediation_attempt=0,
         )
         baseline["scope"]["read_only"] = True
         baseline["validation"]["verdict"] = "pending"
@@ -861,7 +881,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="verification",
             assigned_task_ids=[],
             expected_failures=[],
-            remediation_attempt=0,
         )
         verifier["scope"]["read_only"] = True
         verifier["commit_eligibility"].update(eligible=False, change_kind="none")
@@ -912,7 +931,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="verification",
             assigned_task_ids=[],
             expected_failures=[],
-            remediation_attempt=0,
         )
         verifier["scope"]["read_only"] = True
         verifier["validation"]["verdict"] = "passed"
@@ -935,22 +953,23 @@ class PhaseTasksParserTest(unittest.TestCase):
             ).is_valid(verifier)
         )
 
-    def test_handoff_schema_caps_remediation_and_defers_worker_commits(self) -> None:
+    def test_handoff_schema_omits_cycle_state_and_defers_worker_commits(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         remediation = copy.deepcopy(sample)
         remediation.update(
             stage="remediation",
-            remediation_attempt=2,
             expected_failures=[],
         )
         remediation["validation"]["verdict"] = "failed"
         remediation["commit_eligibility"].update(eligible=False, change_kind="none")
         assert_schema_valid(self, remediation)
 
-        exhausted = copy.deepcopy(remediation)
-        exhausted["remediation_attempt"] = 3
-        self.assertFalse(Draft202012Validator(schema).is_valid(exhausted))
+        leaked_cycle_state = copy.deepcopy(remediation)
+        leaked_cycle_state["remediation_attempt"] = 1
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_cycle_state))
+        self.assertNotIn("remediation_attempt", schema["properties"])
+        self.assertNotIn("remediation_attempt", schema["required"])
 
         commit_eligible_remediation = copy.deepcopy(remediation)
         commit_eligible_remediation["validation"]["verdict"] = "passed"
@@ -962,7 +981,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         )
 
         implementation = copy.deepcopy(remediation)
-        implementation.update(stage="implementation", remediation_attempt=0)
+        implementation.update(stage="implementation")
         implementation["validation"]["verdict"] = "passed"
         implementation["commit_eligibility"].update(
             eligible=True, change_kind="feat"
@@ -977,7 +996,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="documentation",
             assigned_task_ids=[],
             expected_failures=[],
-            remediation_attempt=0,
         )
         documentation["validation"]["verdict"] = "passed"
         documentation["commit_eligibility"].update(

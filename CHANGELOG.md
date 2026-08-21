@@ -30,6 +30,9 @@
 10. Routed unresolved implementation and every remediation result through fresh
     verification, and deferred the exact accumulated implementation/remediation
     commit until a phase-safe verdict.
+11. Kept remediation-cycle state parent-only and clarified that test and
+    remediation workers may iterate on in-scope failures before returning their
+    final stage reports.
 
 ## 1.0.0 - 2026-06-03
 

@@ -85,8 +85,8 @@ repository:
 
 Later agents receive compact handoffs containing phase/task IDs, relevant
 paths, baseline and current validation summaries, deferred findings, expected
-failures, prior SHA/manifests, and the remediation attempt when applicable.
-They do not receive full traces.
+failures, and prior SHA/manifests. Remediation-cycle state remains parent-only;
+workers do not receive full traces or cycle counts.
 
 The test agent changes only assigned test tasks. It may report an intentional
 RED result only when the failure is attributable to missing assigned

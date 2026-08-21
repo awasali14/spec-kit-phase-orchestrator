@@ -30,8 +30,8 @@ context-isolated stage agent at a time while sharing repository state:
 
 Each later agent gets only a compact structured handoff: phase/task IDs,
 relevant paths, regression-baseline and current validation summaries, deferred
-findings, expected failures, prior SHA/manifest, scope, and remediation attempt
-when applicable. Do not pass full traces.
+findings, expected failures, prior SHA/manifest, and scope. Keep
+remediation-cycle state in the parent context and do not pass full traces.
 
 Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
 or continue to another phase. The parent owns baselines, manifest review,

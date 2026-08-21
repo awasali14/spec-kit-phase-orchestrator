@@ -33,9 +33,9 @@ stage transition, remediation count, and `all` queue decision.
    or cross phase boundaries.
 3. Give later agents only compact structured handoffs: phase/task IDs,
    relevant paths, prior SHA, reviewed manifest, validation summaries,
-   regression-baseline evidence, deferred findings, expected failures, and
-   remediation attempt. Never pass full traces, transcripts, parent plans, or
-   another role's instructions.
+   regression-baseline evidence, deferred findings, and expected failures.
+   Never pass full traces, transcripts, parent plans, remediation-cycle state,
+   or another role's instructions.
 4. The parent may commit but must never push.
 5. Stop when isolated agents are unavailable. Do not collapse the stages into
    the parent context.
@@ -130,8 +130,9 @@ report. Every report must include `stage`, `phase_number`, `status`,
 use the typed finding contract in the worker prompt. Populate `stage`, assigned
 IDs, phase scope, relevant paths, prior SHA, prior manifest and validation,
 regression-baseline evidence, deferred findings, expected failures,
-remediation attempt, and conditional commit eligibility. Sanitize the prompt
-and append only the chosen role section.
+and conditional commit eligibility. Sanitize the prompt and append only the
+chosen role section. Keep remediation-cycle state in the parent context; never
+include it in a worker handoff.
 
 Route and require official `/speckit.implement` or `$speckit-implement`
 discipline for both test and implementation stages. Route it to remediation
@@ -177,8 +178,7 @@ remediation, and permits documentation.
 
 Launch a fresh `baseline_verification` agent before phase mutations.
 
-1. Make it strictly read-only and never commit eligible. Assign no task IDs and
-   set `remediation_attempt` to `0`.
+1. Make it strictly read-only and never commit eligible. Assign no task IDs.
 2. Identify suitable regression commands from the phase scope, repository
    configuration, and existing validation. Run them with non-writing settings
    and record the exact command, a compact non-secret environment fingerprint,
@@ -208,10 +208,12 @@ Assign only incomplete `test_tasks`.
 3. Accept either green or intentional RED. RED is eligible only when tests
    collect and execute correctly and every failure is attributable to missing
    assigned implementation.
-4. Syntax, collection, fixture, infrastructure, environment, flaky, and
-   unrelated failures stop the workflow. Require assigned checkboxes to match
-   their baseline unchecked state, correcting only those checkbox edits when
-   necessary. Do not commit.
+4. Require the worker to correct failures within the assigned test scope and
+   rerun the focused gate as needed. If a syntax, collection, fixture,
+   infrastructure, environment, flaky, or unrelated failure remains after
+   available in-scope correction, require assigned checkboxes to match their
+   baseline unchecked state, correcting only those checkbox edits when
+   necessary, and stop the workflow. Do not commit.
 5. Review the exact manifest. With commits enabled, stage only those paths and
    commit an eligible intentional change as:
 
@@ -293,15 +295,18 @@ result, including `unresolved` or failed focused validation.
 
 1. Launch a fresh remediation agent with only the verifier's compact findings,
    phase scope, relevant paths, baseline comparison, validation summary, prior
-   SHA/manifest, deferred findings, and attempt number.
+   SHA/manifest, and deferred findings. Keep the remediation-cycle count in the
+   parent context.
 2. It may change phase-scoped code, tests, fixtures, and necessary phase task
    checkboxes. It may correct a completed phase-scoped test only when the
    verifier classified that test as defective. It must not broaden scope or
    weaken the requirement merely to obtain green.
-3. Run focused validation and report each supplied finding as resolved or
-   unresolved. Reserve independent-phase and regression gates for the fresh
-   verifier. A red or suspected outside-scope result returns `unresolved`; it
-   does not itself make the final stop decision.
+3. Iterate on the assigned findings and run focused validation as needed.
+   Report each supplied finding as resolved or unresolved. Reserve
+   independent-phase and regression gates for the fresh verifier. Return
+   `unresolved` only when a finding or red result remains after available
+   in-scope remediation, or when resolving it would require crossing scope; the
+   worker does not itself make the final stop decision.
 4. Review every scope-clean remediation manifest and keep it unstaged and
    uncommitted. Launch a fresh read-only verifier regardless of the remediation
    validation result. Treat reviewed remediation changes as known phase state,

@@ -22,7 +22,6 @@ Prior validation summary: [PRIOR_VALIDATION_SUMMARY_OR_NONE]
 Regression baseline: [REGRESSION_BASELINE_OR_UNAVAILABLE]
 Deferred findings: [DEFERRED_FINDINGS_OR_NONE]
 Expected failures: [EXPECTED_FAILURES_OR_NONE]
-Remediation attempt: [REMEDIATION_ATTEMPT_OR_ZERO]
 Commit eligibility: [COMMIT_ELIGIBILITY_AND_REQUIREMENTS]
 
 Work only in this phase and role. Do not stage, commit, push, spawn workers,
@@ -91,9 +90,11 @@ assigned checkboxes. A RED result is
 eligible only when tests collect and run correctly and every expected failure
 is attributable to still-missing assigned implementation. Syntax, collection,
 fixture, infrastructure, environment, flaky, or unrelated failures are not an
-expected RED: restore assigned checkboxes to their baseline unchecked state,
-stop, and report the gate as failed. Mark assigned checkboxes only after a
-valid green or eligible RED gate.
+expected RED. Correct failures within the assigned test scope and rerun the
+focused gate as needed. If a non-eligible failure remains after available
+in-scope correction, restore assigned checkboxes to their baseline unchecked
+state and report the gate as failed. Mark assigned checkboxes only after a valid
+green or eligible RED gate.
 ```
 
 ## Implementation Role
@@ -133,8 +134,8 @@ Return a structured verdict with separate focused, independent-phase, and
 suitable regression results. For each result include command, status, and a
 short finding. Report changed-path scope and any unrelated or generated
 artifacts. You own technical attribution and propose `remediate`, `defer`, or
-`block`; the parent owns the final transition after downstream-safety and
-attempt-cap policy. A verifier is never commit eligible.
+`block`; the parent owns the final transition. A verifier is never commit
+eligible.
 
 Rerun every exact regression-baseline command in a comparable environment. A
 baseline pass followed by a failure, an additional failing test identity, or a
@@ -146,10 +147,8 @@ Use `preexisting_unrelated_regression` with proposed disposition `defer` only
 when the same command and comparable environment show identical failing test
 identities and material signatures, no new failure, passing focused and
 independent-phase validation, and confirmed attribution. Return
-`downstream_safe: null`; the
-parent changes it to true only after checking the remaining phase queue, or
-changes the disposition to `block` when safety is not proven. Use
-`inconclusive` with disposition `block` when baseline, attribution, or
+`downstream_safe: null`; the parent owns the downstream-safety determination.
+Use `inconclusive` with disposition `block` when baseline, attribution, or
 comparison evidence is missing, non-comparable, contradictory, or uncertain.
 A phase-safe verdict is `passed` or `passed_with_deferred_findings` after parent
 acceptance.
@@ -174,13 +173,13 @@ requires them. Change a completed phase-scoped test only when the verifier
 classified it as defective, and preserve the requirement rather than weakening
 the assertion. Do not broaden scope or perform opportunistic cleanup.
 
-Run focused validation. Do not run the full independent-phase or regression
-gates; the parent's fresh verifier owns them. Report each supplied finding as
-resolved or unresolved. Return `unresolved` for a red result or suspected
-outside-scope cause; do not make the final blocker decision. Every scope-clean
-remediation manifest remains unstaged and uncommitted. Stop after this attempt;
-the parent always launches a fresh read-only verifier and enforces the
-two-attempt cap.
+Iterate on the assigned findings and run focused validation as needed. Do not
+run the full independent-phase or regression gates. Report each supplied
+finding as resolved or unresolved. Return `unresolved` only when a finding or
+RED result remains after available in-scope remediation, or when resolving it
+would require crossing scope; do not make the final blocker decision. Every
+scope-clean remediation manifest remains unstaged and uncommitted. Return one
+final remediation report and control to the parent.
 ```
 
 ## Documentation Role

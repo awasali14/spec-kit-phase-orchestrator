@@ -29,7 +29,6 @@
       "attributable_to_missing_implementation": true
     }
   ],
-  "remediation_attempt": 0,
   "scope": {
     "phase_number": 3,
     "relevant_paths": [

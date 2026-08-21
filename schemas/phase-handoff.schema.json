@@ -14,7 +14,6 @@
     "assigned_task_ids",
     "prior",
     "expected_failures",
-    "remediation_attempt",
     "scope",
     "validation",
     "commit_eligibility"
@@ -97,11 +96,6 @@
     "expected_failures": {
       "type": "array",
       "items": {"$ref": "#/$defs/expected_failure"}
-    },
-    "remediation_attempt": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 2
     },
     "scope": {
       "type": "object",
@@ -189,7 +183,6 @@
       "then": {
         "properties": {
           "assigned_task_ids": {"maxItems": 0},
-          "remediation_attempt": {"const": 0},
           "scope": {"properties": {"read_only": {"const": true}}},
           "commit_eligibility": {
             "properties": {
@@ -209,7 +202,6 @@
       "then": {
         "properties": {
           "scope": {"properties": {"read_only": {"const": true}}},
-          "remediation_attempt": {"maximum": 2},
           "commit_eligibility": {
             "properties": {
               "eligible": {"const": false},
@@ -223,7 +215,6 @@
       "if": {"properties": {"stage": {"const": "remediation"}}},
       "then": {
         "properties": {
-          "remediation_attempt": {"minimum": 1, "maximum": 2},
           "scope": {"properties": {"read_only": {"const": false}}},
           "commit_eligibility": {
             "properties": {
