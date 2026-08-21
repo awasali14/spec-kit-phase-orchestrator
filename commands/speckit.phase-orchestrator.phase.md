@@ -211,9 +211,10 @@ Assign only incomplete `test_tasks`.
 4. Require the worker to correct failures within the assigned test scope and
    rerun the focused gate as needed. If a syntax, collection, fixture,
    infrastructure, environment, flaky, or unrelated failure remains after
-   available in-scope correction, require assigned checkboxes to match their
-   baseline unchecked state, correcting only those checkbox edits when
-   necessary, and stop the workflow. Do not commit.
+   available in-scope correction, require the worker to restore assigned
+   checkboxes to their baseline unchecked state and report the gate as failed.
+   After reviewing that final report, the parent stops the workflow without
+   committing the test-stage changes.
 5. Review the exact manifest. With commits enabled, stage only those paths and
    commit an eligible intentional change as:
 

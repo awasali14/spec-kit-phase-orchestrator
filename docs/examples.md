@@ -163,8 +163,9 @@ Prior SHA: <sha>
 
 Implement only the assigned test tasks. Mark their checkboxes only after the
 test gate. An intentional RED is eligible only when missing assigned
-implementation explains the failure. Stop on syntax, collection, fixture,
-infrastructure, or unrelated failures.
+implementation explains the failure. Correct failures within the assigned test
+scope; if an ineligible failure remains, restore assigned checkboxes and report
+the gate as failed to the parent.
 ```
 
 After the parent reviews and, by default, commits eligible test changes, the

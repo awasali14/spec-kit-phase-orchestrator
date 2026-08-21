@@ -596,6 +596,10 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("remains after available in-scope correction", test_role)
         self.assertNotIn("stop, and report the gate as failed", test_role)
 
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+        self.assertIn("the worker to restore assigned checkboxes", command)
+        self.assertIn("the parent stops the workflow", command)
+
     def test_implementation_role_routes_unresolved_gate_to_verification(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
         implementation = compact(section(template, "Implementation Role"))

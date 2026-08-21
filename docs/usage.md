@@ -91,7 +91,8 @@ workers do not receive full traces or cycle counts.
 The test agent changes only assigned test tasks. It may report an intentional
 RED result only when the failure is attributable to missing assigned
 implementation. Syntax, collection, fixture, infrastructure, and unrelated
-failures stop the stage without a commit. The implementation agent inspects
+failures are reported after available in-scope correction; the parent then
+stops the stage without a commit. The implementation agent inspects
 committed tests directly, or the reviewed test manifest under `--no-commit`,
 and runs the complete focused phase-test gate. If it cannot reach green, it
 returns typed unresolved findings for independent verification rather than
