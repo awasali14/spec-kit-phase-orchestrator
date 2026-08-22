@@ -2,19 +2,13 @@
   "schema_version": "2.0.0",
   "stage": "test",
   "tasks_path": "examples/sample-tasks.md",
-  "mode": "phase",
   "phase": {
     "number": 3,
     "title": "User Story 1 - Start Or Resume A Package (Priority: P1)",
     "slug": "user-story-1-start-or-resume-a-package-priority-p1",
     "purpose": null,
     "checkpoint": null,
-    "independent_test": "A user can open a saved scholarship and start or resume a document package.",
-    "documentation_path": "Documentation/example-application-document-workspace/phase-3-user-story-1-start-or-resume-a-package-priority-p1-execution.md",
-    "task_complete": false,
-    "documentation_complete": false,
-    "workflow_complete": false,
-    "next_stage": "test"
+    "independent_test": "A user can open a saved scholarship and start or resume a document package."
   },
   "assigned_task_ids": ["T007", "T008"],
   "prior": {
@@ -51,24 +45,6 @@
     "expectations": [
       "Collect and run focused Phase 3 tests.",
       "Allow RED only for missing T009-T011 implementation."
-    ],
-    "results": [
-      {
-        "kind": "focused",
-        "command": "npm test -- applicationDocumentWorkspaceRoute useApplicationDocumentEntry",
-        "status": "expected_red",
-        "summary": "Both tests ran and failed only because the assigned production entry flow is absent."
-      }
-    ],
-    "verdict": "expected_red"
-  },
-  "commit_eligibility": {
-    "eligible": true,
-    "change_kind": "test",
-    "requirements": [
-      "Exact manifest contains only assigned tests and task checkboxes.",
-      "Expected RED is attributable only to missing assigned implementation."
-    ],
-    "no_commit": false
+    ]
   }
 }

@@ -84,9 +84,12 @@ repository:
 7. Documentation agent after a phase-safe final verdict.
 
 Later agents receive compact handoffs containing phase/task IDs, relevant
-paths, baseline and current validation summaries, deferred findings, expected
-failures, and prior SHA/manifests. Remediation-cycle state remains parent-only;
-workers do not receive full traces or cycle counts.
+paths, baseline and prior validation summaries, stage validation expectations,
+deferred findings, expected failures, and prior SHA/manifests. Current-stage
+results and verdicts come only from the worker report. Remediation-cycle and
+commit-control state remain parent-only, as do selector mode and phase-lifecycle
+state. Workers do not receive full traces, cycle counts, commit mode flags, or
+queue/continuation metadata.
 
 The test agent changes only assigned test tasks. It may report an intentional
 RED result only when the failure is attributable to missing assigned

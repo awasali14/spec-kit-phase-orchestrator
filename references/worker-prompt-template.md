@@ -22,7 +22,7 @@ Prior validation summary: [PRIOR_VALIDATION_SUMMARY_OR_NONE]
 Regression baseline: [REGRESSION_BASELINE_OR_UNAVAILABLE]
 Deferred findings: [DEFERRED_FINDINGS_OR_NONE]
 Expected failures: [EXPECTED_FAILURES_OR_NONE]
-Commit eligibility: [COMMIT_ELIGIBILITY_AND_REQUIREMENTS]
+Validation expectations: [VALIDATION_EXPECTATIONS]
 
 Work only in this phase and role. Do not stage, commit, push, spawn workers,
 run the phase orchestrator, or cross phase boundaries. Do not change protected
@@ -105,10 +105,10 @@ Append only for `stage: implementation`:
 Use the supplied official `/speckit.implement` or `$speckit-implement`
 discipline for this assigned implementation work. Inspect the reviewed tests
 directly from the repository. When a test stage ran, use its commit in commit
-mode or its prior reviewed manifest in --no-commit mode. If no test stage ran,
-identify existing phase-scoped tests from the assigned tasks and repository
-context. Implement only assigned implementation/setup tasks. Do not add
-unrelated coverage or change completed phase work.
+mode or its prior reviewed manifest when those changes remain uncommitted. If
+no test stage ran, identify existing phase-scoped tests from the assigned tasks
+and repository context. Implement only assigned implementation/setup tasks. Do
+not add unrelated coverage or change completed phase work.
 
 Run the complete focused phase-test gate, including tests authored by the
 preceding test stage, when present, and any other relevant phase-scoped tests.
@@ -117,6 +117,9 @@ marking assigned checkboxes. If green cannot be reached or a defective test,
 cross-phase requirement, or other unresolved cause is suspected, return
 `unresolved` with typed findings instead of changing completed test work or
 crossing the phase boundary. Your suspicion is not a final blocker decision.
+Treat the finding's kind, attribution, and confidence as provisional, set its
+`disposition` to `null`, and leave the fresh verifier to classify it
+independently.
 All implementation changes remain ineligible for a parent commit until a fresh
 verifier returns a phase-safe verdict.
 ```
@@ -177,7 +180,11 @@ Iterate on the assigned findings and run focused validation as needed. Do not
 run the full independent-phase or regression gates. Report each supplied
 finding as resolved or unresolved. Return `unresolved` only when a finding or
 RED result remains after available in-scope remediation, or when resolving it
-would require crossing scope; do not make the final blocker decision. Every
+would require crossing scope; do not make the final blocker decision. Report a
+newly discovered relevant issue rather than fixing it outside the assigned
+scope. Treat its kind, attribution, and confidence as provisional, set its
+`disposition` to `null`, and leave the fresh verifier to classify it
+independently. Every
 scope-clean remediation manifest remains unstaged and uncommitted. Return one
 final remediation report and control to the parent.
 ```
@@ -215,13 +222,17 @@ implementation, verification, or remediation agents.
 ## Structured Report
 
 Require every stage to return this lightweight contract. `stage`,
-`phase_number`, `status`, `changed_paths`, `validation`, and `commit_eligible`
-are always required. `expected_failures`, `findings`, and `caveats` may be
-empty or omitted. Every non-empty finding must contain all typed fields shown
-below. Other contextual fields may be omitted when they do not apply. This
-report is not governed by `phase-handoff.schema.json`, which covers the
-parent-to-worker handoff. The parent stops when required report or finding
-evidence is missing, contradictory, or incompatible with the disposition.
+`phase_number`, `status`, `changed_paths`, and `validation` are always required.
+`expected_failures`, `findings`, and `caveats` may be empty or omitted. Every
+non-empty finding must contain all typed fields shown below. Only a
+verification-stage finding may use a non-null `disposition`: `remediate`,
+`defer`, or `block`. Findings from every other stage use `disposition: null`,
+and their kind, attribution, and confidence are provisional evidence rather
+than transition decisions. Other contextual fields may be omitted when they do
+not apply. This report is not governed by `phase-handoff.schema.json`, which
+covers the parent-to-worker handoff. The parent stops when required report or
+finding evidence is missing, contradictory, or incompatible with the
+disposition.
 
 ```json
 {
@@ -239,7 +250,7 @@ evidence is missing, contradictory, or incompatible with the disposition.
       "id": "F1",
       "kind": "defective_test|phase_scoped_failure|phase_introduced_regression|preexisting_unrelated_regression|cross_phase_dependency|inconclusive",
       "gate": "focused|independent_phase|regression|scope",
-      "disposition": "remediate|defer|block",
+      "disposition": null,
       "attribution": "phase_introduced|preexisting_unrelated|uncertain|not_applicable",
       "confidence": "confirmed|uncertain",
       "summary": "...",
@@ -262,7 +273,6 @@ evidence is missing, contradictory, or incompatible with the disposition.
       "downstream_safe": null
     }
   ],
-  "commit_eligible": false,
   "caveats": []
 }
 ```
@@ -271,7 +281,10 @@ Use `null` evidence only when the finding is not a regression and the comparison
 does not apply. `downstream_safe` is `true`, `false`, or `null` while
 the parent decision is pending. An accepted deferred finding requires confirmed
 attribution, comparable non-empty baseline and current evidence, and
-`downstream_safe: true`. An uncertain finding must use disposition `block`.
+`downstream_safe: true`. A verification-stage finding with uncertain
+attribution or comparison evidence must use disposition `block`. A
+non-verification finding keeps `disposition: null` until the verifier
+independently classifies it.
 Never include secrets, raw logs, timestamps, durations, or other unstable data
 in an environment fingerprint or failure signature.
 

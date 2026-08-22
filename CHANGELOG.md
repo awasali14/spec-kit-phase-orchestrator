@@ -14,7 +14,7 @@
 4. Added workflow-completion and next-stage parser state so checked phases with
    missing verified documentation resume safely.
 5. Upgraded the phase handoff contract to v2 with stage, prior-state,
-   validation, expected-failure, scope, and commit-eligibility data.
+   validation-expectation, expected-failure, and scope data.
 6. Added a durable workflow-complete phase-document marker and aggregate staged
    execution record.
 7. Required implementation workers to pass tests authored by the preceding test
@@ -30,9 +30,13 @@
 10. Routed unresolved implementation and every remediation result through fresh
     verification, and deferred the exact accumulated implementation/remediation
     commit until a phase-safe verdict.
-11. Kept remediation-cycle state parent-only and clarified that test and
-    remediation workers may iterate on in-scope failures before returning their
-    final stage reports.
+11. Kept remediation-cycle and commit-control state parent-only, and clarified
+    that test and remediation workers may iterate on in-scope failures before
+    returning their final stage reports; handoffs now carry validation
+    expectations without pre-populated current-stage results or verdicts, and
+    omit parent-owned selector, phase-lifecycle, and queue state. Provisional
+    non-verifier findings now pass unchanged into verification, while
+    remediation accepts only verifier-classified findings.
 
 ## 1.0.0 - 2026-06-03
 

@@ -9,14 +9,12 @@
     "schema_version",
     "stage",
     "tasks_path",
-    "mode",
     "phase",
     "assigned_task_ids",
     "prior",
     "expected_failures",
     "scope",
-    "validation",
-    "commit_eligibility"
+    "validation"
   ],
   "properties": {
     "schema_version": {
@@ -29,20 +27,13 @@
       "type": "string",
       "minLength": 1
     },
-    "mode": {
-      "enum": ["next", "phase", "all"]
-    },
     "phase": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "number",
         "title",
-        "slug",
-        "task_complete",
-        "documentation_complete",
-        "workflow_complete",
-        "next_stage"
+        "slug"
       ],
       "properties": {
         "number": {"type": "integer", "minimum": 1},
@@ -50,15 +41,7 @@
         "slug": {"type": "string", "minLength": 1},
         "purpose": {"type": ["string", "null"]},
         "checkpoint": {"type": ["string", "null"]},
-        "independent_test": {"type": ["string", "null"]},
-        "documentation_path": {"type": "string", "minLength": 1},
-        "task_complete": {"type": "boolean"},
-        "documentation_complete": {"type": "boolean"},
-        "workflow_complete": {"type": "boolean"},
-        "next_stage": {
-          "type": ["string", "null"],
-          "enum": ["test", "implementation", "verification", null]
-        }
+        "independent_test": {"type": ["string", "null"]}
       }
     },
     "assigned_task_ids": {
@@ -133,35 +116,12 @@
     "validation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["expectations", "results", "verdict"],
+      "required": ["expectations"],
       "properties": {
         "expectations": {
           "type": "array",
           "items": {"type": "string", "minLength": 1}
-        },
-        "results": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/validation_result"}
-        },
-        "verdict": {
-          "enum": ["pending", "passed", "expected_red", "failed"]
         }
-      }
-    },
-    "commit_eligibility": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["eligible", "change_kind", "requirements", "no_commit"],
-      "properties": {
-        "eligible": {"type": "boolean"},
-        "change_kind": {
-          "enum": ["none", "test", "feat", "fix", "chore", "docs"]
-        },
-        "requirements": {
-          "type": "array",
-          "items": {"type": "string", "minLength": 1}
-        },
-        "no_commit": {"type": "boolean"}
       }
     },
     "documentation": {
@@ -183,13 +143,7 @@
       "then": {
         "properties": {
           "assigned_task_ids": {"maxItems": 0},
-          "scope": {"properties": {"read_only": {"const": true}}},
-          "commit_eligibility": {
-            "properties": {
-              "eligible": {"const": false},
-              "change_kind": {"const": "none"}
-            }
-          }
+          "scope": {"properties": {"read_only": {"const": true}}}
         }
       }
     },
@@ -201,11 +155,16 @@
       "if": {"properties": {"stage": {"const": "verification"}}},
       "then": {
         "properties": {
-          "scope": {"properties": {"read_only": {"const": true}}},
-          "commit_eligibility": {
-            "properties": {
-              "eligible": {"const": false},
-              "change_kind": {"const": "none"}
+          "scope": {"properties": {"read_only": {"const": true}}}
+        }
+      },
+      "else": {
+        "properties": {
+          "findings": {
+            "items": {
+              "properties": {
+                "disposition": {"enum": ["remediate", "defer", "block"]}
+              }
             }
           }
         }
@@ -215,46 +174,7 @@
       "if": {"properties": {"stage": {"const": "remediation"}}},
       "then": {
         "properties": {
-          "scope": {"properties": {"read_only": {"const": false}}},
-          "commit_eligibility": {
-            "properties": {
-              "eligible": {"const": false},
-              "change_kind": {"const": "none"}
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {"properties": {"stage": {"const": "implementation"}}},
-      "then": {
-        "properties": {
-          "commit_eligibility": {
-            "properties": {
-              "eligible": {"const": false},
-              "change_kind": {"const": "none"}
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "stage": {"const": "test"},
-          "validation": {"properties": {"verdict": {"const": "expected_red"}}}
-        }
-      },
-      "then": {
-        "properties": {
-          "expected_failures": {
-            "minItems": 1,
-            "items": {
-              "properties": {
-                "attributable_to_missing_implementation": {"const": true}
-              }
-            }
-          }
+          "scope": {"properties": {"read_only": {"const": false}}}
         }
       }
     },
@@ -263,9 +183,11 @@
       "then": {
         "required": ["documentation"],
         "properties": {
-          "scope": {"properties": {"read_only": {"const": false}}},
-          "validation": {"properties": {"verdict": {"const": "passed"}}}
+          "scope": {"properties": {"read_only": {"const": false}}}
         }
+      },
+      "else": {
+        "not": {"required": ["documentation"]}
       }
     }
   ],
@@ -326,7 +248,7 @@
           ]
         },
         "gate": {"enum": ["focused", "independent_phase", "regression", "scope"]},
-        "disposition": {"enum": ["remediate", "defer", "block"]},
+        "disposition": {"enum": [null, "remediate", "defer", "block"]},
         "attribution": {
           "enum": [
             "phase_introduced",
@@ -394,7 +316,7 @@
           "minItems": 1,
           "uniqueItems": true
         },
-        "attributable_to_missing_implementation": {"type": "boolean"}
+        "attributable_to_missing_implementation": {"const": true}
       }
     }
   }

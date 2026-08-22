@@ -125,14 +125,24 @@ Use
 and `schemas/phase-handoff.schema.json` contract v2 as the source of truth for
 the parent-to-worker handoff. The schema does not govern the worker's stage
 report. Every report must include `stage`, `phase_number`, `status`,
-`changed_paths`, `validation`, and `commit_eligible`; `expected_failures`,
-`findings`, and `caveats` may be empty or omitted. Every non-empty finding must
-use the typed finding contract in the worker prompt. Populate `stage`, assigned
-IDs, phase scope, relevant paths, prior SHA, prior manifest and validation,
-regression-baseline evidence, deferred findings, expected failures,
-and conditional commit eligibility. Sanitize the prompt and append only the
-chosen role section. Keep remediation-cycle state in the parent context; never
-include it in a worker handoff.
+`changed_paths`, and `validation`; `expected_failures`, `findings`, and
+`caveats` may be empty or omitted. Every non-empty finding must use the typed
+finding contract in the worker prompt. Only verification-stage findings may
+carry a non-null `disposition`; findings from every other stage provide
+provisional classification evidence with `disposition: null` for independent
+verification. Preserve that null disposition when routing a non-verifier
+finding into a verification handoff; never invent a transition decision merely
+to satisfy the handoff. A remediation handoff receives only findings already
+classified by a verifier with `remediate`, `defer`, or `block`. Populate only
+the selected stage, assigned IDs, phase identity and requirements, scope,
+relevant paths, prior SHA, prior manifest and validation, regression-baseline
+evidence, deferred findings, expected failures, and stage-specific validation
+expectations. Never put current-stage validation results or a verdict in a
+worker handoff; the worker returns them in its stage report, while earlier
+results remain under prior validation. Sanitize the prompt and append only the
+chosen role section. Keep selector mode, phase-lifecycle, queue, commit-control,
+and remediation-cycle state in the parent context; never include them in a
+worker handoff.
 
 Route and require official `/speckit.implement` or `$speckit-implement`
 discipline for both test and implementation stages. Route it to remediation
@@ -241,7 +251,8 @@ Assign only incomplete `implementation_tasks`.
    results when it can. If it cannot reach green or suspects a defective test,
    cross-phase requirement, or other unresolved cause, return `unresolved` with
    typed findings instead of changing completed test work or crossing scope.
-   The worker's suspicion is not a final blocker decision.
+   The worker's classification is provisional and uses `disposition: null`; it
+   is not a final blocker decision.
 4. Review the exact manifest and keep all implementation changes unstaged and
    uncommitted, whether the focused gate is green or unresolved. Treat that
    reviewed manifest as known phase state for the read-only verifier. Do not
@@ -307,7 +318,10 @@ result, including `unresolved` or failed focused validation.
    independent-phase and regression gates for the fresh verifier. Return
    `unresolved` only when a finding or red result remains after available
    in-scope remediation, or when resolving it would require crossing scope; the
-   worker does not itself make the final stop decision.
+   worker does not itself make the final stop decision. It also reports any
+   newly discovered relevant issue rather than fixing it outside the supplied
+   scope, using a provisional classification and `disposition: null` until the
+   fresh verifier independently classifies it.
 4. Review every scope-clean remediation manifest and keep it unstaged and
    uncommitted. Launch a fresh read-only verifier regardless of the remediation
    validation result. Treat reviewed remediation changes as known phase state,

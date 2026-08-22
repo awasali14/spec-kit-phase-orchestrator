@@ -612,6 +612,8 @@ class PhaseTasksParserTest(unittest.TestCase):
             "If green cannot be reached",
             "return `unresolved` with typed findings",
             "not a final blocker decision",
+            "set its `disposition` to `null`",
+            "fresh verifier to classify it independently",
             "ineligible for a parent commit until a fresh verifier",
         ]:
             self.assertIn(expected, implementation)
@@ -687,9 +689,9 @@ class PhaseTasksParserTest(unittest.TestCase):
             "`status`",
             "`changed_paths`",
             "`validation`",
-            "`commit_eligible`",
         ]:
             self.assertIn(field, template)
+        self.assertNotIn("`commit_eligible`", template)
         self.assertIn("may be empty or omitted", template)
         self.assertIn("not governed by `phase-handoff.schema.json`", template)
         for field in [
@@ -704,11 +706,24 @@ class PhaseTasksParserTest(unittest.TestCase):
             self.assertIn(field, template)
         for disposition in ["remediate", "defer", "block"]:
             self.assertIn(disposition, template)
+        self.assertIn("Only a verification-stage finding", template)
+        self.assertIn("non-verification finding keeps `disposition: null`", template)
         self.assertIn("schema does not govern the worker's stage report", command)
         self.assertNotIn("schema-invalid report", command)
         self.assertIn("missing required fields", command)
         self.assertIn("contradicts the stage contract", command)
         self.assertIn("lacks enough evidence for the parent gate", command)
+
+    def test_non_verifier_findings_are_provisional_until_verification(self) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        remediation = compact(section(template, "Remediation Role"))
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        self.assertIn("newly discovered relevant issue", remediation)
+        self.assertIn("`disposition` to `null`", remediation)
+        self.assertIn("fresh verifier to classify it independently", remediation)
+        self.assertIn("Only verification-stage findings", command)
+        self.assertIn("`disposition: null`", command)
 
     def test_implementation_and_remediation_share_one_verified_commit_gate(self) -> None:
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
@@ -826,9 +841,11 @@ class PhaseTasksParserTest(unittest.TestCase):
             "[REGRESSION_BASELINE_OR_UNAVAILABLE]",
             "[DEFERRED_FINDINGS_OR_NONE]",
             "[EXPECTED_FAILURES_OR_NONE]",
-            "[COMMIT_ELIGIBILITY_AND_REQUIREMENTS]",
+            "[VALIDATION_EXPECTATIONS]",
         ]:
             self.assertIn(placeholder, common)
+        self.assertNotIn("Commit eligibility", common)
+        self.assertNotIn("COMMIT_ELIGIBILITY", common)
         self.assertNotIn("Remediation attempt", common)
         self.assertNotIn("REMEDIATION_ATTEMPT", common)
         self.assertNotIn("SANITIZED_PARENT_CONTEXT", common)
@@ -852,8 +869,43 @@ class PhaseTasksParserTest(unittest.TestCase):
             },
         )
         assert_schema_valid(self, sample)
+        self.assertNotIn("commit_eligibility", schema["properties"])
+        self.assertNotIn("commit_eligibility", schema["required"])
+        self.assertNotIn("commit_eligibility", sample)
+        self.assertNotIn("documentation_path", schema["properties"]["phase"]["properties"])
+        self.assertNotIn("documentation_path", sample["phase"])
+        self.assertNotIn("mode", schema["properties"])
+        self.assertNotIn("mode", schema["required"])
+        self.assertNotIn("mode", sample)
+        for field in [
+            "task_complete",
+            "documentation_complete",
+            "workflow_complete",
+            "next_stage",
+        ]:
+            self.assertNotIn(field, schema["properties"]["phase"]["properties"])
+            self.assertNotIn(field, schema["properties"]["phase"]["required"])
+            self.assertNotIn(field, sample["phase"])
+        self.assertEqual(
+            set(schema["properties"]["validation"]["properties"]),
+            {"expectations"},
+        )
+        self.assertEqual(set(sample["validation"]), {"expectations"})
 
-    def test_handoff_schema_enforces_baseline_read_only_no_commit_contract(self) -> None:
+        leaked_current_result = copy.deepcopy(sample)
+        leaked_current_result["validation"]["results"] = []
+        leaked_current_result["validation"]["verdict"] = "pending"
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_current_result))
+
+        leaked_selector_state = copy.deepcopy(sample)
+        leaked_selector_state["mode"] = "phase"
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_selector_state))
+
+        leaked_lifecycle_state = copy.deepcopy(sample)
+        leaked_lifecycle_state["phase"]["next_stage"] = "test"
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_lifecycle_state))
+
+    def test_handoff_schema_enforces_baseline_read_only_contract(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         baseline = copy.deepcopy(sample)
@@ -863,9 +915,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             expected_failures=[],
         )
         baseline["scope"]["read_only"] = True
-        baseline["validation"]["verdict"] = "pending"
-        baseline["validation"]["results"] = []
-        baseline["commit_eligibility"].update(eligible=False, change_kind="none")
         assert_schema_valid(self, baseline)
 
         baseline["assigned_task_ids"] = ["T007"]
@@ -874,8 +923,9 @@ class PhaseTasksParserTest(unittest.TestCase):
         baseline["scope"]["read_only"] = False
         self.assertFalse(Draft202012Validator(schema).is_valid(baseline))
         baseline["scope"]["read_only"] = True
-        baseline["commit_eligibility"].update(eligible=True, change_kind="fix")
-        self.assertFalse(Draft202012Validator(schema).is_valid(baseline))
+        leaked_commit_state = copy.deepcopy(baseline)
+        leaked_commit_state["commit_eligibility"] = {"no_commit": True}
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_commit_state))
 
     def test_handoff_schema_types_regression_evidence_and_findings(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
@@ -887,7 +937,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             expected_failures=[],
         )
         verifier["scope"]["read_only"] = True
-        verifier["commit_eligibility"].update(eligible=False, change_kind="none")
         evidence = {
             "command": "npm test -- regression",
             "environment_fingerprint": "node-22; runner-1",
@@ -918,6 +967,42 @@ class PhaseTasksParserTest(unittest.TestCase):
         del missing_confidence["findings"][0]["confidence"]
         self.assertFalse(Draft202012Validator(schema).is_valid(missing_confidence))
 
+    def test_provisional_finding_round_trips_into_fresh_verification(self) -> None:
+        schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
+        sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
+        provisional = {
+            "id": "F1",
+            "kind": "phase_scoped_failure",
+            "gate": "focused",
+            "disposition": None,
+            "attribution": "uncertain",
+            "confidence": "uncertain",
+            "summary": "The focused failure remained after in-scope remediation.",
+            "related_task_ids": [],
+            "affected_paths": [],
+            "baseline_evidence": None,
+            "current_evidence": None,
+            "downstream_safe": None,
+        }
+
+        verification = copy.deepcopy(sample)
+        verification.update(
+            stage="verification",
+            assigned_task_ids=[],
+            expected_failures=[],
+            findings=[copy.deepcopy(provisional)],
+        )
+        verification["scope"]["read_only"] = True
+        assert_schema_valid(self, verification)
+
+        remediation = copy.deepcopy(verification)
+        remediation.update(stage="remediation")
+        remediation["scope"]["read_only"] = False
+        self.assertFalse(Draft202012Validator(schema).is_valid(remediation))
+
+        remediation["findings"][0]["disposition"] = "remediate"
+        assert_schema_valid(self, remediation)
+
     def test_handoff_schema_enforces_expected_red_attribution(self) -> None:
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         invalid = copy.deepcopy(sample)
@@ -928,7 +1013,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         self.assertFalse(Draft202012Validator(schema).is_valid(invalid))
 
-    def test_handoff_schema_enforces_read_only_verifier_and_no_commit(self) -> None:
+    def test_handoff_schema_enforces_read_only_verifier(self) -> None:
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         verifier = copy.deepcopy(sample)
         verifier.update(
@@ -937,17 +1022,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             expected_failures=[],
         )
         verifier["scope"]["read_only"] = True
-        verifier["validation"]["verdict"] = "passed"
-        verifier["validation"]["results"] = [
-            {
-                "kind": kind,
-                "command": f"verify-{kind}",
-                "status": "passed",
-                "summary": f"{kind} passed",
-            }
-            for kind in ["focused", "independent_phase", "regression"]
-        ]
-        verifier["commit_eligibility"].update(eligible=False, change_kind="none")
         assert_schema_valid(self, verifier)
 
         verifier["scope"]["read_only"] = False
@@ -957,7 +1031,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             ).is_valid(verifier)
         )
 
-    def test_handoff_schema_omits_cycle_state_and_defers_worker_commits(self) -> None:
+    def test_handoff_schema_omits_parent_cycle_and_commit_state(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
         sample = json.loads(HANDOFF_SAMPLE.read_text(encoding="utf-8"))
         remediation = copy.deepcopy(sample)
@@ -965,8 +1039,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="remediation",
             expected_failures=[],
         )
-        remediation["validation"]["verdict"] = "failed"
-        remediation["commit_eligibility"].update(eligible=False, change_kind="none")
         assert_schema_valid(self, remediation)
 
         leaked_cycle_state = copy.deepcopy(remediation)
@@ -975,22 +1047,14 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertNotIn("remediation_attempt", schema["properties"])
         self.assertNotIn("remediation_attempt", schema["required"])
 
-        commit_eligible_remediation = copy.deepcopy(remediation)
-        commit_eligible_remediation["validation"]["verdict"] = "passed"
-        commit_eligible_remediation["commit_eligibility"].update(
-            eligible=True, change_kind="fix"
-        )
-        self.assertFalse(
-            Draft202012Validator(schema).is_valid(commit_eligible_remediation)
-        )
-
-        implementation = copy.deepcopy(remediation)
-        implementation.update(stage="implementation")
-        implementation["validation"]["verdict"] = "passed"
-        implementation["commit_eligibility"].update(
-            eligible=True, change_kind="feat"
-        )
-        self.assertFalse(Draft202012Validator(schema).is_valid(implementation))
+        leaked_commit_state = copy.deepcopy(remediation)
+        leaked_commit_state["commit_eligibility"] = {
+            "eligible": False,
+            "change_kind": "none",
+            "requirements": [],
+            "no_commit": True,
+        }
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_commit_state))
 
     def test_documentation_handoff_requires_marker_contract(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
@@ -1000,10 +1064,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             stage="documentation",
             assigned_task_ids=[],
             expected_failures=[],
-        )
-        documentation["validation"]["verdict"] = "passed"
-        documentation["commit_eligibility"].update(
-            eligible=True, change_kind="docs"
         )
         documentation["documentation"] = {
             "path": "Documentation/feature/phase-3.md",
@@ -1015,6 +1075,16 @@ class PhaseTasksParserTest(unittest.TestCase):
         missing = copy.deepcopy(documentation)
         del missing["documentation"]
         self.assertFalse(Draft202012Validator(schema).is_valid(missing))
+
+        leaked_to_test = copy.deepcopy(sample)
+        leaked_to_test["documentation"] = copy.deepcopy(documentation["documentation"])
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_to_test))
+
+        leaked_phase_path = copy.deepcopy(sample)
+        leaked_phase_path["phase"]["documentation_path"] = documentation[
+            "documentation"
+        ]["path"]
+        self.assertFalse(Draft202012Validator(schema).is_valid(leaked_phase_path))
 
     def test_parent_git_gates_use_exact_paths_and_protect_dirty_state(self) -> None:
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))

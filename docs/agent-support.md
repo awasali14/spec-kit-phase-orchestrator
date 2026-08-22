@@ -29,20 +29,28 @@ context-isolated stage agent at a time while sharing repository state:
 6. Documentation after a phase-safe final verdict.
 
 Each later agent gets only a compact structured handoff: phase/task IDs,
-relevant paths, regression-baseline and current validation summaries, deferred
-findings, expected failures, prior SHA/manifest, and scope. Keep
-remediation-cycle state in the parent context and do not pass full traces.
+relevant paths, regression-baseline and prior validation summaries, stage
+validation expectations, deferred findings, expected failures, prior
+SHA/manifest, and scope. Current-stage results and verdicts come only from the
+worker report. Keep remediation-cycle and commit-control state in the parent
+context. Keep selector mode, phase-lifecycle state, and queue/continuation
+metadata there as well; do not pass full traces.
 
 Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
 or continue to another phase. The parent owns baselines, manifest review,
 exact-path staging, commits, remediation-cycle control, and continuation.
 
 Every worker report always includes `stage`, `phase_number`, `status`,
-`changed_paths`, `validation`, and `commit_eligible`. Expected failures,
-findings, and caveats may be empty or omitted. Non-empty findings use typed
-classification, disposition, attribution, comparison, and downstream-safety
-fields. This lightweight report contract remains separate from the JSON schema
+`changed_paths`, and `validation`. Expected failures, findings, and caveats may
+be empty or omitted. Non-empty findings use typed classification, disposition,
+attribution, comparison, and downstream-safety fields. This lightweight report
+contract remains separate from the JSON schema
 used for parent-to-worker handoffs.
+
+Non-verifier findings keep `disposition: null` when routed into a fresh
+verification handoff. The parent must not invent a transition decision during
+that handoff. Remediation receives only verifier-classified findings with a
+non-null `remediate`, `defer`, or `block` disposition.
 
 Parent-only model and effort settings, fallback model-selection text, and
 orchestration instructions should stay with the parent. They are configuration
