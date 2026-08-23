@@ -699,10 +699,13 @@ class PhaseTasksParserTest(unittest.TestCase):
             "not a final blocker decision",
             "set its `disposition` to `null`",
             "fresh verifier to classify it independently",
-            "reversible progress commit",
-            "before fresh verification",
+            "completed schema-valid implementation report",
+            "Do not stage, commit, or decide the next transition",
         ]:
             self.assertIn(expected, implementation)
+        self.assertNotIn("progress commit", implementation)
+        self.assertNotIn("commit eligibility", implementation)
+        self.assertNotIn("parent may create", implementation.lower())
         self.assertIn("tests authored by the preceding test stage", command)
         self.assertIn("when present, and any other relevant phase-scoped tests", command)
 
@@ -739,7 +742,7 @@ class PhaseTasksParserTest(unittest.TestCase):
 
         self.assertIn("run focused validation as needed", remediation)
         self.assertIn("remains after available in-scope remediation", remediation)
-        self.assertIn("one final remediation report and control to the parent", remediation)
+        self.assertIn("completed schema-valid remediation report and control to the parent", remediation)
         self.assertNotIn("fresh read-only verifier", remediation)
         self.assertNotIn("two-attempt cap", remediation)
         self.assertIn("at most two complete", command)
@@ -840,7 +843,10 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("Never combine their manifests", command)
         self.assertIn("assigned implementation-task intent", command)
         self.assertIn("`passed` or `unresolved`", command)
-        self.assertIn("progress commit before fresh verification", remediation)
+        self.assertIn("completed schema-valid remediation report", remediation)
+        self.assertIn("Do not stage, commit, or decide the next transition", remediation)
+        self.assertNotIn("progress commit", remediation)
+        self.assertNotIn("commit eligibility", remediation)
 
     def test_usage_starts_with_a_purpose_line(self) -> None:
         lines = USAGE.read_text(encoding="utf-8").splitlines()

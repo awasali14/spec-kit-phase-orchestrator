@@ -126,9 +126,8 @@ crossing the phase boundary. Your suspicion is not a final blocker decision.
 Treat the finding's kind, attribution, and confidence as provisional, set its
 `disposition` to `null`, and leave the fresh verifier to classify it
 independently.
-The parent may create a reversible progress commit for a schema-valid,
-scope-clean `passed` or `unresolved` result before fresh verification. You do
-not stage, commit, or decide commit eligibility.
+Return one completed schema-valid implementation report and control to the
+parent. Do not stage, commit, or decide the next transition.
 ```
 
 ## Verification Role
@@ -191,10 +190,8 @@ would require crossing scope; do not make the final blocker decision. Report a
 newly discovered relevant issue rather than fixing it outside the assigned
 scope. Treat its kind, attribution, and confidence as provisional, set its
 `disposition` to `null`, and leave the fresh verifier to classify it
-independently. Every scope-clean remediation manifest may become a parent-owned
-progress commit before fresh verification. Return one final remediation report
-and control to the parent; you do not stage, commit, or decide commit
-eligibility.
+independently. Return one completed schema-valid remediation report and control
+to the parent. Do not stage, commit, or decide the next transition.
 ```
 
 ## Documentation Role
