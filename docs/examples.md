@@ -170,10 +170,13 @@ the gate as failed to the parent.
 
 After the parent reviews and, by default, commits eligible test changes, the
 implementation handoff contains `T007`, `T008`, relevant paths, the prior SHA,
-test manifest, baseline evidence, validation summary, and expected RED. It
+test manifest, baseline evidence, validation summary, expected RED, and the
+stage-locked report contract/form. It
 instructs the agent to inspect committed tests directly and run the complete
-focused phase-test gate. Its manifest remains uncommitted; an unresolved result
-continues to the verifier with typed suspected findings.
+focused phase-test gate. The parent validates the completed report and commits
+the exact scope-clean implementation manifest for either `passed` or
+`unresolved`; an unresolved result then continues to the verifier with typed
+suspected findings.
 
 The verifier receives only the phase scope, manifests, SHAs, baseline evidence,
 deferred findings, and validation summaries. It remains read-only, reruns exact
@@ -183,9 +186,10 @@ remediated within scope. A pre-existing failure is deferred only when it is
 unchanged, unrelated, and safe for remaining phases. Uncertainty blocks.
 
 Every remediation result, including unresolved focused validation, receives a
-fresh verifier. After two non-phase-safe cycles, the workflow stops with all
-implementation/remediation changes uncommitted. After a phase-safe verdict, the
-parent creates one intent-based commit for their exact accumulated path union.
+fresh verifier. Before that verifier runs, each schema-valid, scope-clean
+remediation result gets its own exact-path progress commit. After two
+non-phase-safe cycles, the workflow stops but retains earlier eligible progress
+commits; it does not create an aggregate certificate commit.
 
 Only the documentation handoff contains the execution-document and Mermaid
 instructions. Every worker is forbidden to stage, commit, push, spawn workers,
@@ -208,8 +212,8 @@ After the staged workflow completes Phase 3 successfully:
    required styled Mermaid flow, and
    `<!-- phase-orchestrator:workflow-complete v2 -->`.
 5. By default, the parent creates only eligible exact-path commits: test
-   coverage, one verified intent-based implementation/remediation commit, and
-   final documentation.
+   coverage, an intent-based implementation checkpoint, zero to two remediation
+   checkpoints, and final documentation—normally three and at most five.
 6. With `--no-commit`, the same stages and gates run with per-stage manifests,
    but accumulated reviewed changes remain unstaged and uncommitted.
 

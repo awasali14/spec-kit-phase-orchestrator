@@ -120,29 +120,32 @@ over every default below and must be propagated to every affected worker.
 
 ## Build Stage Handoffs
 
-Use
-`.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`
-and `schemas/phase-handoff.schema.json` contract v2 as the source of truth for
-the parent-to-worker handoff. The schema does not govern the worker's stage
-report. Every report must include `stage`, `phase_number`, `status`,
-`changed_paths`, and `validation`; `expected_failures`, `findings`, and
-`caveats` may be empty or omitted. Every non-empty finding must use the typed
-finding contract in the worker prompt. Only verification-stage findings may
-carry a non-null `disposition`; findings from every other stage provide
-provisional classification evidence with `disposition: null` for independent
-verification. Preserve that null disposition when routing a non-verifier
-finding into a verification handoff; never invent a transition decision merely
-to satisfy the handoff. A remediation handoff receives only findings already
-classified by a verifier with `remediate`, `defer`, or `block`. Populate only
+Use `.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`,
+`schemas/phase-handoff.schema.json`, and `schemas/phase-report.schema.json` as
+the v2 contracts. Every handoff must include `report_contract` with the report
+schema ID, schema version `2.0.0`, and the same fixed stage as the assignment.
+Send the matching stage-specific report form from the worker prompt with every
+handoff and require every array field, using `[]` when empty.
+
+After the worker returns, validate the completed report against
+`phase-report.schema.json` before trusting its status, validation, evidence, or
+findings. Then cross-check its stage, phase number, assigned task IDs, and exact
+changed paths against the assignment and the parent-observed Git manifest.
+Cross-check regression comparability, downstream safety, supplied remediation
+finding IDs, and protected paths because those relationships span documents or
+repository state and cannot be proven by the standalone report schema. Reject
+the report before any transition or commit when either validation layer fails.
+
+Only verification-stage findings may carry a non-null `disposition`; findings
+from every other stage remain provisional with `disposition: null`. Preserve
+that null disposition when routing a non-verifier finding into verification. A
+remediation handoff receives only verifier-classified findings. Populate only
 the selected stage, assigned IDs, phase identity and requirements, scope,
 relevant paths, prior SHA, prior manifest and validation, regression-baseline
-evidence, deferred findings, expected failures, and stage-specific validation
-expectations. Never put current-stage validation results or a verdict in a
-worker handoff; the worker returns them in its stage report, while earlier
-results remain under prior validation. Sanitize the prompt and append only the
-chosen role section. Keep selector mode, phase-lifecycle, queue, commit-control,
-and remediation-cycle state in the parent context; never include them in a
-worker handoff.
+evidence, deferred findings, expected failures, validation expectations, and
+report contract. Never put current-stage results or a verdict in the handoff.
+Sanitize the prompt and append only the chosen role and report form. Keep
+selector, lifecycle, queue, commit-control, and remediation-cycle state parent-only.
 
 Route and require official `/speckit.implement` or `$speckit-implement`
 discipline for both test and implementation stages. Route it to remediation
@@ -161,10 +164,11 @@ Run this state machine for one selected phase:
 baseline_verification before mutation, or durable baseline reuse on resume
   -> test when non-empty
   -> implementation when non-empty
+  -> implementation progress commit when eligible
   -> verification (always, fresh, read-only)
   -> remediation on failure
+  -> remediation progress commit when eligible
   -> verification after every remediation result (fresh, read-only)
-  -> verified implementation/remediation commit when eligible
   -> documentation after a phase-safe pass (always)
 ```
 
@@ -253,14 +257,19 @@ Assign only incomplete `implementation_tasks`.
    typed findings instead of changing completed test work or crossing scope.
    The worker's classification is provisional and uses `disposition: null`; it
    is not a final blocker decision.
-4. Review the exact manifest and keep all implementation changes unstaged and
-   uncommitted, whether the focused gate is green or unresolved. Treat that
-   reviewed manifest as known phase state for the read-only verifier. Do not
-   mark unchecked implementation tasks when the focused gate did not pass.
-5. Implementation becomes commit eligible only after a phase-safe final
-   verification. The parent later stages the exact accumulated implementation
-   and remediation path union and selects `feat(<scope>):`, `fix(<scope>):`, or
-   `chore(<scope>):` from the assigned task intent.
+4. Validate the completed report against the report schema and assignment, then
+   review the exact manifest. A schema-valid, internally consistent,
+   scope-clean `passed` or `unresolved` result with intentional changes is an
+   eligible reversible progress checkpoint. Do not mark unchecked
+   implementation tasks when the focused gate did not pass.
+5. With commits enabled, immediately stage only the implementation stage's
+   exact changed paths and commit before launching the verifier. Select
+   `feat(<scope>):`, `fix(<scope>):`, or `chore(<scope>):` from the assigned
+   implementation-task intent. Record stage/status, task IDs, exact files,
+   focused validation, unresolved findings when present, and prior SHA in the
+   body. A later blocking verification leaves this progress commit in history.
+   Under `--no-commit`, keep the reviewed manifest unstaged as known phase
+   state for the verifier.
 
 ### Verification Stage
 
@@ -299,9 +308,10 @@ result, including `unresolved` or failed focused validation.
    `downstream_safe` to true, accept the deferral, and record it immediately for
    documentation and the final aggregate report.
 7. On `passed`, `passed_with_deferred_findings`, or an accepted
-   test-authoring-only `expected_red`, continue to the verified commit gate. On
+   test-authoring-only `expected_red`, continue to documentation. On
    `remediate`, launch remediation when fewer than two attempts have run. On
-   `block`, or when no attempt remains, stop without broadening the phase.
+   `block`, or when no attempt remains, stop without broadening the phase;
+   retain any earlier eligible progress commits.
 
 ### Remediation And Fresh Re-verification
 
@@ -322,30 +332,44 @@ result, including `unresolved` or failed focused validation.
    newly discovered relevant issue rather than fixing it outside the supplied
    scope, using a provisional classification and `disposition: null` until the
    fresh verifier independently classifies it.
-4. Review every scope-clean remediation manifest and keep it unstaged and
-   uncommitted. Launch a fresh read-only verifier regardless of the remediation
-   validation result. Treat reviewed remediation changes as known phase state,
-   not protected unrelated work.
+4. Validate the completed report against the report schema and assignment, and
+   require one `remediation_results` entry for every supplied finding ID.
+   Review the exact manifest. A schema-valid, internally consistent,
+   scope-clean `passed` or `unresolved` result with intentional changes is an
+   eligible reversible progress checkpoint. With commits enabled, immediately
+   stage only that remediation stage's exact changed paths and commit:
+
+   ```text
+   fix(<scope>): remediate phase <N> findings
+   ```
+
+   Record stage/status, finding IDs, exact files, focused validation, and prior
+   SHA in the body. Under `--no-commit`, keep the reviewed manifest unstaged.
+   In both modes, launch a fresh read-only verifier regardless of the
+   remediation validation result and treat the reviewed changes as known phase
+   state, not protected unrelated work.
 5. Each remediation plus its fresh verification consumes one attempt. Permit at
    most two complete cycles. After attempt one, repeat only for a verifier
    disposition of `remediate`; after attempt two, any non-phase-safe verdict
    stops the workflow.
 
-### Verified Implementation Commit Gate
+### Mutating Stage Commit Gates
 
-After a phase-safe final verification:
+The parent evaluates each mutating stage independently after report-schema,
+assignment, manifest, protection, and scope checks:
 
-1. Review the exact union of implementation and remediation manifests. Reject
-   any path that did not pass the existing manifest and protection gates.
-2. With commits enabled, stage that exact path union once. Use the appropriate
-   `feat(<scope>):`, `fix(<scope>):`, or `chore(<scope>):` subject based on the
-   assigned implementation-task intent, not merely the presence of remediation.
-3. Record task IDs, exact files, focused and final verification, baseline
-   comparison, resolved and deferred findings, remediation count, and prior SHA
-   in the body. When no eligible paths remain, record `no_changes`.
-4. Under `--no-commit`, leave the reviewed union unstaged. On a blocking verdict
-   or exhausted cap, leave every implementation/remediation change unstaged and
-   uncommitted; an earlier eligible test commit may remain.
+1. Test commits only after focused green or attributable expected RED.
+2. Implementation and each remediation attempt commit their own exact paths
+   immediately after a schema-valid, scope-clean `passed` or `unresolved`
+   result. Never combine their manifests into a later certificate commit.
+3. Documentation commits only after final phase-safe verification and parser
+   completion checks.
+4. Baseline and verification never commit. `no_changes`, `--no-commit`, a dirty
+   overlap, unrelated/generated artifacts, `blocked`, `failed`, schema-invalid,
+   internally inconsistent, or manifest-mismatched results never commit.
+5. Every commit uses exact-path staging and records its own prior SHA. A phase
+   with test, implementation, and documentation changes normally has three
+   commits and may have up to five when both remediation cycles change files.
 
 ### Documentation Stage
 
@@ -367,7 +391,8 @@ Launch only after a final phase-safe verdict: `passed`,
 4. Require the exact durable marker
    `<!-- phase-orchestrator:workflow-complete v2 -->`, which may be written only
    when the document records a phase-safe final verification.
-5. Re-run the parser for the same phase and require `task_complete`,
+5. Validate the completed documentation report against the report schema and
+   assignment, then re-run the parser for the same phase and require `task_complete`,
    `documentation_complete`, and `workflow_complete` all true with
    `next_stage: null`.
 6. Confirm only the document changed. With commits enabled, stage that exact
@@ -385,8 +410,9 @@ Launch only after a final phase-safe verdict: `passed`,
 Stop immediately for a dirty-path overlap, unrelated/generated change, invalid
 RED, worker or verifier mutation outside its authority, missing isolation,
 documentation mutation outside its file, or an exhausted remediation cap. Stop
-when a typed finding or stage report is missing required fields, contradicts the
-stage contract, or lacks enough evidence for the parent gate. Stop after the
+when a stage report is schema-invalid, mismatches the assignment or observed
+manifest, contradicts the stage contract, or lacks enough evidence for the
+parent gate. Stop after the
 verifier confirms a required failure cannot be resolved without crossing phase
 scope, attributes a regression as uncertain, cannot prove downstream safety for
 a proposed deferral, or returns a non-phase-safe verdict after attempt two.

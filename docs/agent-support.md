@@ -31,8 +31,10 @@ context-isolated stage agent at a time while sharing repository state:
 Each later agent gets only a compact structured handoff: phase/task IDs,
 relevant paths, regression-baseline and prior validation summaries, stage
 validation expectations, deferred findings, expected failures, prior
-SHA/manifest, and scope. Current-stage results and verdicts come only from the
-worker report. Keep remediation-cycle and commit-control state in the parent
+SHA/manifest, scope, and a stage-locked report contract. The handoff includes
+the applicable form from `schemas/phase-report.schema.json`; current-stage
+results and verdicts come only from the completed worker report. Keep
+remediation-cycle and commit-control state in the parent
 context. Keep selector mode, phase-lifecycle state, and queue/continuation
 metadata there as well; do not pass full traces.
 
@@ -40,12 +42,11 @@ Workers must not stage, commit, push, spawn workers, run the phase orchestrator,
 or continue to another phase. The parent owns baselines, manifest review,
 exact-path staging, commits, remediation-cycle control, and continuation.
 
-Every worker report always includes `stage`, `phase_number`, `status`,
-`changed_paths`, and `validation`. Expected failures, findings, and caveats may
-be empty or omitted. Non-empty findings use typed classification, disposition,
-attribution, comparison, and downstream-safety fields. This lightweight report
-contract remains separate from the JSON schema
-used for parent-to-worker handoffs.
+Every worker report conforms to `schemas/phase-report.schema.json` and includes
+the complete stage form, including empty arrays. The parent validates schema,
+stage, phase, task IDs, evidence, remediation IDs, and changed paths, then
+cross-checks the observed manifest before trusting the result. This validation
+does not replace fresh technical verification.
 
 Non-verifier findings keep `disposition: null` when routed into a fresh
 verification handoff. The parent must not invent a transition decision during
@@ -68,8 +69,9 @@ typed unresolved findings when it cannot reach green. Implementation and
 remediation workers do not make final blocker decisions. A fresh verifier
 classifies findings as remediable, deferrable, or blocking and reruns exact
 baseline regression commands. A test-authoring-only phase may satisfy its
-contract with attributable expected RED. Implementation and remediation stay
-uncommitted until phase-safe verification. Verifiers are strictly read-only.
+contract with attributable expected RED. Eligible implementation and
+remediation stages become separate parent-owned progress commits before their
+fresh verifier runs. Verifiers are strictly read-only.
 
 Only a demonstrably pre-existing, unrelated, unchanged regression with passing
 focused and independent-phase gates and proven downstream safety may be
@@ -159,12 +161,14 @@ Restart the coding agent after re-registering the extension.
 ## Commits
 
 Commits are parent-owned by default. Before each stage, record HEAD and the
-working-tree baseline. Test work may retain its eligible stage commit, but
-implementation and remediation manifests remain unstaged until phase-safe
-verification. Then stage their exact accumulated path union once and select
-`feat`, `fix`, or `chore` from the task intent. Commit bodies record task IDs,
-files, baseline comparison, validation, remediation, deferred and expected
-failures when applicable, and prior SHA. Baseline/verifier workers never commit.
+working-tree baseline. Test work retains its eligible stage commit.
+Implementation commits its exact stage paths immediately after a schema-valid,
+scope-clean `passed` or `unresolved` result using `feat`, `fix`, or `chore` from
+task intent. Each eligible remediation cycle uses a separate
+`fix(scope): remediate phase N findings` commit. Commit bodies record stage
+status, task or finding IDs, files, validation, and prior SHA.
+Baseline/verifier workers never commit; documentation commits only after final
+verification and parser completion.
 
 If the user includes `--no-commit` or clearly says not to commit, all stages
 and gates still run. The parent tracks per-stage manifests but suppresses every

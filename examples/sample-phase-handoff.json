@@ -46,5 +46,10 @@
       "Collect and run focused Phase 3 tests.",
       "Allow RED only for missing T009-T011 implementation."
     ]
+  },
+  "report_contract": {
+    "schema_id": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-report.schema.json",
+    "schema_version": "2.0.0",
+    "stage": "test"
   }
 }

@@ -14,7 +14,8 @@
     "prior",
     "expected_failures",
     "scope",
-    "validation"
+    "validation",
+    "report_contract"
   ],
   "properties": {
     "schema_version": {
@@ -124,6 +125,20 @@
         }
       }
     },
+    "report_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "schema_version", "stage"],
+      "properties": {
+        "schema_id": {
+          "const": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-report.schema.json"
+        },
+        "schema_version": {"const": "2.0.0"},
+        "stage": {
+          "enum": ["baseline_verification", "test", "implementation", "verification", "remediation", "documentation"]
+        }
+      }
+    },
     "documentation": {
       "type": "object",
       "additionalProperties": false,
@@ -138,6 +153,30 @@
     }
   },
   "allOf": [
+    {
+      "if": {"properties": {"stage": {"const": "baseline_verification"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "baseline_verification"}}}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "test"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "test"}}}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "implementation"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "implementation"}}}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "verification"}}}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "remediation"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "remediation"}}}}}
+    },
+    {
+      "if": {"properties": {"stage": {"const": "documentation"}}},
+      "then": {"properties": {"report_contract": {"properties": {"stage": {"const": "documentation"}}}}}
+    },
     {
       "if": {"properties": {"stage": {"const": "baseline_verification"}}},
       "then": {

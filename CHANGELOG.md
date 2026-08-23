@@ -21,15 +21,15 @@
    stage, when present, and any other relevant phase-scoped tests; added scoped
    expected-RED completion for test-authoring-only phases; and made official
    implementation discipline mandatory in both stages.
-8. Replaced the nonexistent stage-report schema assumption with a lightweight
-   required-field contract and deferred remediation commits until fresh
-   re-verification passes.
+8. Added a dedicated Draft 2020-12 worker-report schema, stage-specific report
+   forms in every handoff, and parent validation against the assignment and
+   observed manifest before reports are trusted.
 9. Added a fresh read-only pre-phase regression baseline, typed verifier
    attribution, parent-owned finding dispositions, strict pre-existing
    regression comparison, and conservative downstream-safety checks.
 10. Routed unresolved implementation and every remediation result through fresh
-    verification, and deferred the exact accumulated implementation/remediation
-    commit until a phase-safe verdict.
+    verification, while recording implementation and each scope-clean
+    remediation stage as separate reversible progress commits.
 11. Kept remediation-cycle and commit-control state parent-only, and clarified
     that test and remediation workers may iterate on in-scope failures before
     returning their final stage reports; handoffs now carry validation
@@ -37,6 +37,9 @@
     omit parent-owned selector, phase-lifecycle, and queue state. Provisional
     non-verifier findings now pass unchanged into verification, while
     remediation accepts only verifier-classified findings.
+12. Formalized per-stage commit eligibility, including valid `unresolved`
+    implementation/remediation checkpoints, a maximum normal history of five
+    commits, and unchanged `--no-commit` and read-only-stage behavior.
 
 ## 1.0.0 - 2026-06-03
 

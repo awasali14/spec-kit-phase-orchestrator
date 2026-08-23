@@ -80,15 +80,16 @@ repository:
 4. Read-only verification agent, always run.
 5. Remediation agent followed by a fresh read-only verifier for every
    remediation result, with at most two cycles.
-6. Verified implementation/remediation commit gate.
-7. Documentation agent after a phase-safe final verdict.
+6. Parent-owned implementation and per-cycle remediation progress commits.
+7. Documentation agent and commit after a phase-safe final verdict.
 
 Later agents receive compact handoffs containing phase/task IDs, relevant
 paths, baseline and prior validation summaries, stage validation expectations,
 deferred findings, expected failures, and prior SHA/manifests. Current-stage
 results and verdicts come only from the worker report. Remediation-cycle and
 commit-control state remain parent-only, as do selector mode and phase-lifecycle
-state. Workers do not receive full traces, cycle counts, commit mode flags, or
+state. Every handoff includes the matching stage report schema contract and
+form. Workers do not receive full traces, cycle counts, commit mode flags, or
 queue/continuation metadata.
 
 The test agent changes only assigned test tasks. It may report an intentional
@@ -101,8 +102,11 @@ and runs the complete focused phase-test gate. If it cannot reach green, it
 returns typed unresolved findings for independent verification rather than
 making the final blocker decision. Verification is strictly read-only and
 reports focused, independent-phase, and suitable regression validation. Every
-remediation outcome is freshly verified. Implementation and remediation remain
-uncommitted until a phase-safe verdict.
+remediation outcome is freshly verified. Before trusting any result, the parent
+validates the completed report against the report schema and cross-checks it
+against the assignment and observed Git manifest. Eligible implementation and
+remediation work is committed immediately as a reversible checkpoint; later
+verification still controls routing and documentation eligibility.
 
 A regression may be deferred only when the pre-phase and current commands and
 environments are comparable, failing test identities and material signatures
@@ -125,13 +129,18 @@ After an eligible successful gate, it reviews and stages only exact paths:
 
 - `test(scope): add phase N coverage`, with the expected RED explained when
   applicable.
-- One intent-based `feat`, `fix`, or `chore` commit for the exact accumulated
-  implementation/remediation path union after phase-safe verification.
+- One intent-based `feat`, `fix`, or `chore` commit for the implementation
+  stage's exact paths after a valid `passed` or `unresolved` result.
+- `fix(scope): remediate phase N findings` for each eligible remediation cycle.
 - `docs(scope): document phase N execution` for final documentation.
 
-Commit bodies record task IDs, files, baseline comparison, validation,
-remediation, deferred and expected failures when applicable, and prior SHA.
+Commit bodies record stage status, task or finding IDs, exact files, validation,
+expected or unresolved evidence when applicable, and prior SHA.
 Baseline/verifier workers never commit, and the orchestrator never pushes.
+
+A phase with test, implementation, and documentation changes normally produces
+three commits and may produce up to five when both remediation cycles change
+files. Blocking verification does not erase earlier progress checkpoints.
 
 Use `--no-commit` or clear wording such as "do not commit" to opt out. In that
 case, every stage and gate still runs, the parent tracks a manifest per stage,

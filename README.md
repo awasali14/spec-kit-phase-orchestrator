@@ -34,7 +34,8 @@ documentation gates preserve a reviewable execution trail.
 7. Marks assigned task checkboxes only after the owning stage passes its gate.
 8. Records exact-path manifests, validation results, commit SHAs, and a durable
    workflow-complete documentation marker.
-9. Defers implementation/remediation commits until a phase-safe verifier verdict.
+9. Validates every worker report against a stage-specific JSON Schema contract.
+10. Commits each eligible mutating stage as its own reversible progress checkpoint.
 
 ## What It Does Not Do
 
@@ -88,9 +89,11 @@ Without a custom location, generated Markdown phase documents go under
 By default, the parent orchestrator records HEAD and the working-tree state
 before every stage and launches a fresh read-only regression-baseline worker
 before phase mutations. Test commits may be intentionally RED only when
-failures are caused by missing assigned implementation. Implementation and
-remediation manifests remain unstaged until a fresh verifier returns a
-phase-safe verdict; the parent then commits their exact accumulated path union once.
+failures are caused by missing assigned implementation. The parent validates
+every completed worker report against the supplied stage-specific report form,
+then commits each eligible implementation or remediation manifest immediately.
+Fresh verification still runs after implementation and after every remediation
+commit.
 A strictly proven pre-existing, unrelated, unchanged regression may be
 recorded as a deferred finding without hiding it from phase documentation.
 
@@ -189,6 +192,8 @@ Supporting scripts and reference templates remain under
    cross phase boundaries. The parent alone owns exact-path Git operations.
 8. Suspected blockers are independently classified; uncertain attribution or
    unproven downstream safety stops the workflow.
+9. Schema-valid reports do not replace fresh verification; they make required
+   evidence and internal consistency machine-checkable before parent policy.
 
 ## Examples
 

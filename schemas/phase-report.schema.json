@@ -1,0 +1,416 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-report.schema.json",
+  "title": "Spec Kit Phase Stage Worker Report",
+  "description": "Completed worker-to-parent report for one isolated Phase Orchestrator 2.0 stage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "stage",
+    "phase_number",
+    "assigned_task_ids",
+    "status",
+    "changed_paths",
+    "validation",
+    "regression_evidence",
+    "expected_failures",
+    "findings",
+    "remediation_results",
+    "caveats"
+  ],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "stage": {
+      "enum": ["baseline_verification", "test", "implementation", "verification", "remediation", "documentation"]
+    },
+    "phase_number": {"type": "integer", "minimum": 1},
+    "assigned_task_ids": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^T[0-9]+$"},
+      "uniqueItems": true
+    },
+    "status": {
+      "enum": [
+        "baseline_recorded",
+        "passed",
+        "passed_with_deferred_findings",
+        "expected_red",
+        "unresolved",
+        "blocked",
+        "failed",
+        "no_changes"
+      ]
+    },
+    "changed_paths": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "validation": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/validation_result"}
+    },
+    "regression_evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/comparison_evidence"}
+    },
+    "expected_failures": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/expected_failure"}
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "remediation_results": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/remediation_result"}
+    },
+    "caveats": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "no_changes"}}},
+      "then": {"properties": {"changed_paths": {"maxItems": 0}}}
+    },
+    {
+      "if": {"properties": {"stage": {"enum": ["baseline_verification", "test", "implementation", "remediation", "documentation"]}}},
+      "then": {
+        "properties": {
+          "findings": {
+            "items": {
+              "properties": {"disposition": {"const": null}}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "baseline_verification"}}},
+      "then": {
+        "properties": {
+          "assigned_task_ids": {"maxItems": 0},
+          "status": {"enum": ["baseline_recorded", "blocked", "failed"]},
+          "changed_paths": {"maxItems": 0},
+          "validation": {
+            "minItems": 1,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["regression", "scope"]}}}]},
+            "contains": {"properties": {"kind": {"const": "regression"}}, "required": ["kind"]}
+          },
+          "regression_evidence": {"minItems": 1},
+          "remediation_results": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "test"}}},
+      "then": {
+        "properties": {
+          "status": {"enum": ["passed", "expected_red", "blocked", "failed", "no_changes"]},
+          "validation": {
+            "minItems": 1,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["focused", "scope"]}}}]},
+            "contains": {"properties": {"kind": {"const": "focused"}}, "required": ["kind"]}
+          },
+          "regression_evidence": {"maxItems": 0},
+          "remediation_results": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "test"}, "status": {"const": "expected_red"}}},
+      "then": {
+        "properties": {
+          "expected_failures": {"minItems": 1},
+          "validation": {"contains": {"properties": {"status": {"const": "expected_red"}}, "required": ["status"]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "test"}, "status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "validation": {
+            "contains": {
+              "properties": {"kind": {"const": "focused"}, "status": {"const": "passed"}},
+              "required": ["kind", "status"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "implementation"}}},
+      "then": {
+        "properties": {
+          "status": {"enum": ["passed", "unresolved", "blocked", "failed", "no_changes"]},
+          "validation": {
+            "minItems": 1,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["focused", "scope"]}}}]},
+            "contains": {"properties": {"kind": {"const": "focused"}}, "required": ["kind"]}
+          },
+          "regression_evidence": {"maxItems": 0},
+          "remediation_results": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "implementation"}, "status": {"const": "unresolved"}}},
+      "then": {
+        "properties": {
+          "findings": {"minItems": 1},
+          "validation": {"contains": {"properties": {"kind": {"const": "focused"}, "status": {"enum": ["failed", "not_run"]}}, "required": ["kind", "status"]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "implementation"}, "status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "validation": {
+            "contains": {
+              "properties": {"kind": {"const": "focused"}, "status": {"const": "passed"}},
+              "required": ["kind", "status"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}}},
+      "then": {
+        "properties": {
+          "status": {"enum": ["passed", "passed_with_deferred_findings", "expected_red", "unresolved", "blocked", "failed"]},
+          "changed_paths": {"maxItems": 0},
+          "validation": {
+            "minItems": 3,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["focused", "independent_phase", "regression", "scope"]}}}]},
+            "allOf": [
+              {"contains": {"properties": {"kind": {"const": "focused"}}, "required": ["kind"]}},
+              {"contains": {"properties": {"kind": {"const": "independent_phase"}}, "required": ["kind"]}},
+              {"contains": {"properties": {"kind": {"const": "regression"}}, "required": ["kind"]}}
+            ]
+          },
+          "regression_evidence": {"minItems": 1},
+          "findings": {
+            "items": {
+              "allOf": [
+                {"$ref": "#/$defs/finding"},
+                {"properties": {"disposition": {"enum": ["remediate", "defer", "block"]}}}
+              ]
+            }
+          },
+          "remediation_results": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}, "status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "findings": {"maxItems": 0},
+          "validation": {"items": {"properties": {"status": {"const": "passed"}}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}, "status": {"const": "passed_with_deferred_findings"}}},
+      "then": {
+        "properties": {
+          "findings": {
+            "minItems": 1,
+            "items": {"properties": {"disposition": {"const": "defer"}}}
+          },
+          "validation": {
+            "allOf": [
+              {"contains": {"properties": {"kind": {"const": "focused"}, "status": {"const": "passed"}}, "required": ["kind", "status"]}},
+              {"contains": {"properties": {"kind": {"const": "independent_phase"}, "status": {"const": "passed"}}, "required": ["kind", "status"]}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}, "status": {"const": "unresolved"}}},
+      "then": {
+        "properties": {
+          "findings": {
+            "minItems": 1,
+            "contains": {"properties": {"disposition": {"const": "remediate"}}, "required": ["disposition"]},
+            "not": {"contains": {"properties": {"disposition": {"const": "block"}}, "required": ["disposition"]}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}, "status": {"enum": ["blocked", "failed"]}}},
+      "then": {
+        "properties": {
+          "findings": {
+            "minItems": 1,
+            "contains": {"properties": {"disposition": {"const": "block"}}, "required": ["disposition"]}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "verification"}, "status": {"const": "expected_red"}}},
+      "then": {
+        "properties": {
+          "expected_failures": {"minItems": 1},
+          "findings": {"maxItems": 0},
+          "validation": {"contains": {"properties": {"status": {"const": "expected_red"}}, "required": ["status"]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "remediation"}}},
+      "then": {
+        "properties": {
+          "status": {"enum": ["passed", "unresolved", "blocked", "failed", "no_changes"]},
+          "validation": {
+            "minItems": 1,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["focused", "scope"]}}}]}
+          },
+          "regression_evidence": {"maxItems": 0},
+          "remediation_results": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "remediation"}, "status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "remediation_results": {"items": {"properties": {"status": {"const": "resolved"}}}},
+          "validation": {"contains": {"properties": {"kind": {"const": "focused"}, "status": {"const": "passed"}}, "required": ["kind", "status"]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "remediation"}, "status": {"const": "unresolved"}}},
+      "then": {
+        "properties": {
+          "remediation_results": {
+            "contains": {"properties": {"status": {"const": "unresolved"}}, "required": ["status"]}
+          },
+          "validation": {"contains": {"properties": {"kind": {"const": "focused"}, "status": {"enum": ["failed", "not_run"]}}, "required": ["kind", "status"]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "documentation"}}},
+      "then": {
+        "properties": {
+          "status": {"enum": ["passed", "blocked", "failed", "no_changes"]},
+          "validation": {
+            "minItems": 2,
+            "items": {"allOf": [{"$ref": "#/$defs/validation_result"}, {"properties": {"kind": {"enum": ["documentation", "parser", "scope"]}}}]},
+            "allOf": [
+              {"contains": {"properties": {"kind": {"const": "documentation"}}, "required": ["kind"]}},
+              {"contains": {"properties": {"kind": {"const": "parser"}}, "required": ["kind"]}}
+            ]
+          },
+          "regression_evidence": {"maxItems": 0},
+          "remediation_results": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"stage": {"const": "documentation"}, "status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "validation": {
+            "items": {"properties": {"status": {"const": "passed"}}}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "validation_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "command", "status", "summary"],
+      "properties": {
+        "kind": {"enum": ["focused", "independent_phase", "regression", "scope", "documentation", "parser"]},
+        "command": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "not_run", "expected_red"]},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "comparison_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "environment_fingerprint", "status", "failing_tests", "failure_signatures"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "environment_fingerprint": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "not_run"]},
+        "failing_tests": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "failure_signatures": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "expected_failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "related_task_ids", "attributable_to_missing_implementation"],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1},
+        "related_task_ids": {"type": "array", "items": {"type": "string", "pattern": "^T[0-9]+$"}, "minItems": 1, "uniqueItems": true},
+        "attributable_to_missing_implementation": {"const": true}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "gate", "disposition", "attribution", "confidence", "summary", "related_task_ids", "affected_paths", "baseline_evidence", "current_evidence", "downstream_safe"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["defective_test", "phase_scoped_failure", "phase_introduced_regression", "preexisting_unrelated_regression", "cross_phase_dependency", "inconclusive"]},
+        "gate": {"enum": ["focused", "independent_phase", "regression", "scope"]},
+        "disposition": {"enum": [null, "remediate", "defer", "block"]},
+        "attribution": {"enum": ["phase_introduced", "preexisting_unrelated", "uncertain", "not_applicable"]},
+        "confidence": {"enum": ["confirmed", "uncertain"]},
+        "summary": {"type": "string", "minLength": 1},
+        "related_task_ids": {"type": "array", "items": {"type": "string", "pattern": "^T[0-9]+$"}, "uniqueItems": true},
+        "affected_paths": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "baseline_evidence": {"oneOf": [{"$ref": "#/$defs/comparison_evidence"}, {"type": "null"}]},
+        "current_evidence": {"oneOf": [{"$ref": "#/$defs/comparison_evidence"}, {"type": "null"}]},
+        "downstream_safe": {"type": ["boolean", "null"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"disposition": {"const": "defer"}}},
+          "then": {
+            "properties": {
+              "kind": {"const": "preexisting_unrelated_regression"},
+              "attribution": {"const": "preexisting_unrelated"},
+              "confidence": {"const": "confirmed"},
+              "baseline_evidence": {"$ref": "#/$defs/comparison_evidence"},
+              "current_evidence": {"$ref": "#/$defs/comparison_evidence"},
+              "downstream_safe": {"enum": [null, true]}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"disposition": {"enum": ["remediate", "block"]}}},
+          "then": {"properties": {"current_evidence": {"$ref": "#/$defs/comparison_evidence"}}}
+        }
+      ]
+    },
+    "remediation_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finding_id", "status", "summary"],
+      "properties": {
+        "finding_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["resolved", "unresolved"]},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
