@@ -10,6 +10,9 @@ The installed extension does not require the repository's development fixtures.
   incomplete.
 - Use `phase <number>` when you intentionally want one specific phase, even if
   an earlier phase is incomplete.
+- Use `phase <start> to <end>` for a fixed inclusive queue. Phase `start - 1`
+  needs checked tasks when `start > 1`, but manually completed prerequisite
+  phases do not need orchestration documentation.
 - Use `all` when all remaining phases are well-defined and may run sequentially.
   Each phase must pass all staged gates before the next phase starts.
 
@@ -24,6 +27,7 @@ Slash-command integrations such as Claude Code and Cursor use:
 ```text
 /speckit.phase-orchestrator.phase next specs/002-application-document-workspace/tasks.md
 /speckit.phase-orchestrator.phase phase 3 specs/002-application-document-workspace/tasks.md
+/speckit.phase-orchestrator.phase phase 1 to 3 specs/002-application-document-workspace/tasks.md
 /speckit.phase-orchestrator.phase all specs/002-application-document-workspace/tasks.md
 ```
 
@@ -32,6 +36,7 @@ Codex uses the installed skill name:
 ```text
 $speckit-phase-orchestrator-phase next specs/002-application-document-workspace/tasks.md
 $speckit-phase-orchestrator-phase phase 3 specs/002-application-document-workspace/tasks.md
+$speckit-phase-orchestrator-phase phase 1 to 3 specs/002-application-document-workspace/tasks.md
 $speckit-phase-orchestrator-phase all specs/002-application-document-workspace/tasks.md
 ```
 
@@ -102,6 +107,10 @@ project root, the equivalent explicit Phase 3 check is:
 python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py \
   specs/002-application-document-workspace/tasks.md --phase 3 --json
 ```
+
+The equivalent inclusive range selector is `--phase 1 --through-phase 3`.
+The parent freezes those phase numbers and reparses each selected phase before
+running it, but does not send full-file analysis or queue state to workers.
 
 Representative fields are:
 

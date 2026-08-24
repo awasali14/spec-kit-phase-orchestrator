@@ -22,7 +22,8 @@ documentation gates preserve a reviewable execution trail.
 ## What It Does
 
 1. Parses an existing Spec Kit `tasks.md`.
-2. Selects `next`, `phase <number>`, or `all`.
+2. Selects `next`, `phase <number>`, an inclusive phase range, or `all` after
+   the parent analyzes the complete task file.
 3. Runs one phase at a time through sequential, isolated stage agents.
 4. Records a read-only pre-phase regression baseline, then runs test tasks,
    implementation/setup tasks, independent verification, conditional
@@ -70,6 +71,16 @@ Run a specific phase:
 ```text
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md
 ```
+
+Run a fixed inclusive range sequentially:
+
+```text
+/speckit.phase-orchestrator.phase phase 1 to 6 specs/002-feature/tasks.md
+```
+
+For a range beginning after Phase 1, the immediately preceding phase must have
+all task checkboxes checked. It does not need orchestrator documentation when
+it was completed manually.
 
 Run all remaining phases sequentially:
 

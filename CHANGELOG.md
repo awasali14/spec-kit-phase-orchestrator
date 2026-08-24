@@ -40,6 +40,11 @@
 12. Formalized per-stage commit eligibility, including valid `unresolved`
     implementation/remediation checkpoints, a maximum normal history of five
     commits, and unchanged `--no-commit` and read-only-stage behavior.
+13. Added inclusive `phase <start> to <end>` execution with contiguous-range
+    validation, checkbox-only predecessor acceptance, a fixed ending boundary,
+    and workflow-complete gating for every selected phase.
+14. Required parent-only analysis of the complete `tasks.md` before planning or
+    launching workers in every invocation mode.
 
 ## 1.0.0 - 2026-06-03
 

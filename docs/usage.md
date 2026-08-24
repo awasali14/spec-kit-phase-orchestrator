@@ -19,6 +19,7 @@ Use one of these prompt forms:
 ```text
 /speckit.phase-orchestrator.phase next specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md
+/speckit.phase-orchestrator.phase phase 1 to 6 specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase all specs/002-feature/tasks.md
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --docs-dir Documentation/custom-feature
 /speckit.phase-orchestrator.phase phase 3 specs/002-feature/tasks.md --no-commit
@@ -30,6 +31,15 @@ verification instead of being skipped.
 
 `phase <number>` selects the requested phase only, even when earlier phases are
 still incomplete.
+
+`phase <start> to <end>` freezes an inclusive sequential queue. Both values
+must be positive, every phase number in the range must exist, and `start` must
+not exceed `end`. Phase 1 needs no prerequisite. For later starts, Phase
+`start - 1` must have every task checkbox checked, but it need not have an
+orchestrator document or workflow marker. Checked-but-undocumented phases
+inside the range still resume at verification, and workflow-complete phases
+inside the range are skipped unless rerunning is explicitly requested. The
+queue never continues beyond `end`.
 
 `all` runs the remaining workflow-incomplete phases sequentially. Every gate,
 including final verification and documentation completion, must pass before it
@@ -46,6 +56,7 @@ The supporting parser can be run directly:
 ```bash
 python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --mode next --json
 python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --phase 3 --json
+python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --phase 1 --through-phase 6 --json
 python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --mode all --json
 ```
 
@@ -53,6 +64,10 @@ The JSON output includes the selected phase, test and implementation task
 classification, generated Markdown documentation path, `task_complete`,
 `documentation_complete`, `workflow_complete`, `next_stage`, and a
 workflow-aware phase queue for `all`.
+
+Before selecting or planning workers in any mode, the parent reads and analyzes
+the complete original `tasks.md`. That full-file analysis and frozen range or
+queue state stay parent-only; workers receive compact phase-specific handoffs.
 
 By default, Markdown phase documentation is generated under:
 

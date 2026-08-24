@@ -178,6 +178,150 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertEqual([phase["number"] for phase in output["selected_phases"]], [1, 2, 3, 4, 5, 6])
         self.assertEqual(output["incomplete_phase_count"], 6)
 
+    def test_range_from_phase_one_requires_no_predecessor(self) -> None:
+        output = phase_tasks.build_output(
+            SAMPLE_TASKS, "next", 1, through_phase=6
+        )
+
+        self.assertEqual(output["mode"], "range")
+        self.assertEqual(output["frozen_phase_numbers"], [1, 2, 3, 4, 5, 6])
+        self.assertEqual(
+            [phase["number"] for phase in output["selected_phases"]],
+            [1, 2, 3, 4, 5, 6],
+        )
+
+    def test_range_accepts_checked_predecessor_without_documentation(self) -> None:
+        content = SAMPLE_TASKS.read_text(encoding="utf-8").replace(
+            "- [ ] T007", "- [X] T007"
+        ).replace(
+            "- [ ] T008", "- [X] T008"
+        ).replace(
+            "- [ ] T009", "- [X] T009"
+        ).replace(
+            "- [ ] T010", "- [X] T010"
+        ).replace(
+            "- [ ] T011", "- [X] T011"
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tasks_path = Path(temp_dir) / "tasks.md"
+            tasks_path.write_text(content, encoding="utf-8")
+            output = phase_tasks.build_output(
+                tasks_path, "next", 4, through_phase=6
+            )
+
+        self.assertEqual(output["frozen_phase_numbers"], [4, 5, 6])
+        self.assertEqual(
+            [phase["number"] for phase in output["selected_phases"]], [4, 5, 6]
+        )
+        phase_three = next(
+            phase for phase in output["all_phases"] if phase["number"] == 3
+        )
+        self.assertTrue(phase_three["task_complete"])
+        self.assertFalse(phase_three["documentation_complete"])
+
+    def test_range_rejects_unchecked_predecessor(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"prerequisite phase 3 has unchecked tasks"
+        ):
+            phase_tasks.build_output(SAMPLE_TASKS, "next", 4, through_phase=6)
+
+    def test_range_skips_workflow_complete_phase_but_resumes_checked_undocumented_phase(
+        self,
+    ) -> None:
+        content = """# Tasks: Range Completion
+
+## Phase 1: Prerequisite
+- [X] T001 Complete prerequisite in `src/one.py`
+
+## Phase 2: Documented
+- [X] T002 Complete documented work in `src/two.py`
+
+## Phase 3: Undocumented
+- [X] T003 Complete undocumented work in `src/three.py`
+
+## Phase 4: Pending
+- [ ] T004 Add pending work in `src/four.py`
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            tasks_path = root / "tasks.md"
+            docs_dir = root / "docs"
+            tasks_path.write_text(content, encoding="utf-8")
+            phase_two = phase_tasks.build_output(
+                tasks_path, "next", 2, docs_dir
+            )["selected_phase"]
+            write_workflow_document(Path(phase_two["documentation_path"]))
+            output = phase_tasks.build_output(
+                tasks_path, "next", 2, docs_dir, through_phase=4
+            )
+
+        self.assertEqual(
+            [phase["number"] for phase in output["selected_phases"]], [3, 4]
+        )
+        self.assertEqual(output["selected_phase"]["number"], 3)
+        self.assertEqual(output["selected_phase"]["next_stage"], "verification")
+
+    def test_range_rejects_missing_noncontiguous_phase_number(self) -> None:
+        content = """# Tasks: Missing Phase
+
+## Phase 1: First
+- [X] T001 Complete first work
+
+## Phase 3: Third
+- [ ] T003 Complete third work
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tasks_path = Path(temp_dir) / "tasks.md"
+            tasks_path.write_text(content, encoding="utf-8")
+            with self.assertRaisesRegex(
+                ValueError, r"missing phase number\(s\): 2"
+            ):
+                phase_tasks.build_output(
+                    tasks_path, "next", 1, through_phase=3
+                )
+
+    def test_range_stops_exactly_at_ending_phase(self) -> None:
+        output = phase_tasks.build_output(
+            SAMPLE_TASKS, "next", 1, through_phase=4
+        )
+
+        self.assertEqual(output["frozen_phase_numbers"], [1, 2, 3, 4])
+        self.assertEqual(
+            [phase["number"] for phase in output["selected_phases"]], [1, 2, 3, 4]
+        )
+
+    def test_cli_rejects_invalid_ranges_and_multi_phase_docs_path(self) -> None:
+        cases = [
+            (["--phase", "0", "--through-phase", "2"], "positive integer"),
+            (["--phase", "-1", "--through-phase", "2"], "positive integer"),
+            (["--phase", "1", "--through-phase", "0"], "positive integer"),
+            (["--phase", "1", "--through-phase", "-2"], "positive integer"),
+            (["--phase", "3", "--through-phase", "2"], "less than or equal"),
+            (["--through-phase", "2"], "requires --phase"),
+            (
+                [
+                    "--phase",
+                    "1",
+                    "--through-phase",
+                    "2",
+                    "--docs-path",
+                    "Documentation/phase.md",
+                ],
+                "multi-phase range",
+            ),
+        ]
+
+        for arguments, message in cases:
+            with self.subTest(arguments=arguments):
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), str(SAMPLE_TASKS), *arguments],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(message, result.stderr)
+
     def test_preserves_task_ids(self) -> None:
         output = phase_tasks.build_output(SAMPLE_TASKS, "phase", 5)
 
@@ -1392,6 +1536,31 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("before reparsing and selecting the next phase", command)
         self.assertIn("sequentially", command)
         self.assertIn("Never reuse a", command)
+
+    def test_parent_analyzes_complete_tasks_file_before_every_selector(self) -> None:
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        self.assertIn("read and analyze the complete original `tasks.md`", command)
+        self.assertIn("not only parser summaries", command)
+        self.assertIn(
+            "applies equally to `next`, a single `phase`, an inclusive phase range, and `all`",
+            command,
+        )
+        self.assertIn("Keep this complete-file analysis parent-only", command)
+        self.assertIn("must not contain future-phase tasks", command)
+
+    def test_command_range_contract_is_frozen_and_workflow_gated(self) -> None:
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        self.assertIn("phase <start> to <end> <tasks.md path>", command)
+        self.assertIn("--through-phase <end>", command)
+        self.assertIn(
+            "every task checkbox in Phase `start - 1` is checked", command
+        )
+        self.assertIn("do not require predecessor orchestration documentation", command)
+        self.assertIn("Freeze the exact inclusive phase-number queue", command)
+        self.assertIn("never add a phase or continue beyond `end`", command)
+        self.assertIn("Do not advance merely because task checkboxes are checked", command)
 
     def test_version_and_public_contract_are_consistently_v2(self) -> None:
         extension = EXTENSION_FILE.read_text(encoding="utf-8")

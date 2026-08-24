@@ -15,6 +15,7 @@ Accept these forms:
 ```text
 next <tasks.md path> [--docs-dir <directory>] [--no-commit]
 phase <number> <tasks.md path> [--docs-dir <directory>] [--no-commit]
+phase <start> to <end> <tasks.md path> [--docs-dir <directory>] [--no-commit]
 all <tasks.md path> [--docs-dir <directory>] [--no-commit]
 ```
 
@@ -40,29 +41,61 @@ stage transition, remediation count, and `all` queue decision.
 5. Stop when isolated agents are unavailable. Do not collapse the stages into
    the parent context.
 
+### Complete Task-File Analysis
+
+Before building its plan or launching the first worker, the parent must read
+and analyze the complete original `tasks.md` directly, not only parser
+summaries for the selected phase. This gate applies equally to `next`, a single
+`phase`, an inclusive phase range, and `all`.
+
+The parent must understand every phase, task boundary, dependency,
+execution-order note, and completion state; identify earlier prerequisites and
+later work that must remain out of scope; and inspect selected work in detail
+for relevant paths, validation expectations, skills, and MCP routing. Keep
+this complete-file analysis parent-only. Worker handoffs remain compact and
+phase-specific and must not contain future-phase tasks, the full parent plan,
+or frozen queue state.
+
 ## Resolve And Select
 
-1. Parse the prompt and locate the repository root and `tasks.md`.
-2. Run the installed parser with `--json` and the matching selector:
+1. Parse the prompt and locate the repository root and `tasks.md`, then satisfy
+   the complete task-file analysis gate before planning any worker.
+2. Validate the selector and run the installed parser with `--json` and the
+   matching selector:
 
    ```text
    python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py <tasks.md> --mode next --json
    python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py <tasks.md> --phase <number> --json
+   python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py <tasks.md> --phase <start> --through-phase <end> --json
    python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py <tasks.md> --mode all --json
    ```
 
-3. Pass `--docs-dir` through. For an explicit Markdown path with `next`, first
+3. For a range, require positive integers with `start <= end` and require every
+   phase number in the inclusive range to exist. Phase 1 has no predecessor.
+   When `start > 1`, require only that every task checkbox in Phase `start - 1`
+   is checked; do not require predecessor orchestration documentation or a
+   workflow-complete marker, and do not require documentation for any still
+   earlier phase outside the range. Freeze the exact inclusive phase-number
+   queue before launching the first worker and never add a phase or continue
+   beyond `end`.
+4. Pass `--docs-dir` through. For an explicit Markdown path with `next`, first
    resolve the candidate, then rerun that number with `--phase <number>
    --docs-path <path>`. With `all`, require one unambiguous explicit path per
-   phase; otherwise stop for clarification rather than reusing a file. Pass an
-   explicit phase path directly with `--docs-path <path>`.
-4. Select `next` and `all` by `workflow_complete`, not checkbox completion.
+   phase; otherwise stop for clarification rather than reusing a file. Reject
+   one explicit documentation path for a multi-phase range. Pass an explicit
+   single-phase path directly with `--docs-path <path>`.
+5. Select `next`, ranges, and `all` by `workflow_complete`, not checkbox completion.
    A phase with `task_complete: true` but `documentation_complete: false`
    resumes at `next_stage: verification`.
-5. In `all`, execute one phase through every gate and its workflow-complete
-   documentation marker before reparsing and selecting the next phase.
-6. If the explicit phase is already workflow complete, report that state and
-   do not rerun it unless the user explicitly asks.
+6. In a range or `all`, execute one phase through every gate and its
+   workflow-complete documentation marker before reparsing and selecting the
+   next phase. For a range, reparse the current phase state, resume at its
+   reported `next_stage`, and advance only to the next number in the frozen
+   queue. Do not advance merely because task checkboxes are checked.
+7. If an explicitly selected phase or a phase inside a range is already
+   workflow complete, report or skip that phase and do not rerun it unless the
+   user explicitly asks. Stop successfully when the frozen range reaches its
+   ending phase.
 
 ## Baseline And Manifest Gate
 

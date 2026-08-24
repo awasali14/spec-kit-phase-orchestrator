@@ -276,6 +276,7 @@ def select_phases(
     docs_dir: Path | None = None,
     feature_slug: str = "feature",
     explicit_docs_path: Path | None = None,
+    through_phase: int | None = None,
 ) -> list[Phase]:
     incomplete = [
         phase
@@ -287,6 +288,46 @@ def select_phases(
             explicit_docs_path if phase_number == phase.number else None,
         )["workflow_complete"]
     ]
+
+    if through_phase is not None:
+        if phase_number is None:
+            raise ValueError("through phase requires a starting phase")
+        if phase_number < 1 or through_phase < 1:
+            raise ValueError("phase range values must be positive integers")
+        if phase_number > through_phase:
+            raise ValueError(
+                "starting phase must be less than or equal to through phase"
+            )
+
+        phases_by_number = {phase.number: phase for phase in phases}
+        missing = [
+            number
+            for number in range(phase_number, through_phase + 1)
+            if number not in phases_by_number
+        ]
+        if missing:
+            rendered = ", ".join(str(number) for number in missing)
+            raise ValueError(f"phase range contains missing phase number(s): {rendered}")
+
+        if phase_number > 1:
+            prerequisite_number = phase_number - 1
+            prerequisite = phases_by_number.get(prerequisite_number)
+            if prerequisite is None:
+                raise ValueError(
+                    f"prerequisite phase {prerequisite_number} was not found"
+                )
+            if prerequisite.incomplete:
+                incomplete_ids = ", ".join(task.id for task in prerequisite.incomplete)
+                raise ValueError(
+                    f"prerequisite phase {prerequisite_number} has unchecked tasks: "
+                    f"{incomplete_ids}"
+                )
+
+        return [
+            phases_by_number[number]
+            for number in range(phase_number, through_phase + 1)
+            if phases_by_number[number] in incomplete
+        ]
 
     if phase_number is not None:
         selected = [phase for phase in phases if phase.number == phase_number]
@@ -309,7 +350,17 @@ def build_output(
     phase_number: int | None,
     docs_dir: Path | None = None,
     explicit_docs_path: Path | None = None,
+    through_phase: int | None = None,
 ) -> dict[str, Any]:
+    if (
+        explicit_docs_path is not None
+        and through_phase is not None
+        and phase_number != through_phase
+    ):
+        raise ValueError(
+            "an explicit documentation path cannot be used with a multi-phase range"
+        )
+
     phases, feature_title = parse_tasks(path)
     feature_slug = infer_feature_slug(path, feature_title)
     selected = select_phases(
@@ -319,6 +370,7 @@ def build_output(
         docs_dir,
         feature_slug,
         explicit_docs_path,
+        through_phase,
     )
     selected_phase = selected[0] if selected else None
     phase_outputs = [
@@ -341,8 +393,18 @@ def build_output(
         "explicit_docs_path": (
             explicit_docs_path.as_posix() if explicit_docs_path is not None else None
         ),
-        "mode": "phase" if phase_number is not None else mode,
+        "mode": (
+            "range"
+            if through_phase is not None
+            else "phase" if phase_number is not None else mode
+        ),
         "requested_phase": phase_number,
+        "through_phase": through_phase,
+        "frozen_phase_numbers": (
+            list(range(phase_number, through_phase + 1))
+            if phase_number is not None and through_phase is not None
+            else None
+        ),
         "phase_count": len(phases),
         "complete_phase_count": len(workflow_complete_phases),
         "task_complete_phase_count": len(task_complete_phases),
@@ -409,6 +471,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--mode", choices=["next", "all"], default="next")
     parser.add_argument("--phase", type=int)
     parser.add_argument(
+        "--through-phase",
+        type=int,
+        help="Select an inclusive phase range. Requires --phase.",
+    )
+    parser.add_argument(
         "--docs-dir",
         type=Path,
         help=(
@@ -426,12 +493,28 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
     if args.phase is not None and args.phase < 1:
         parser.error("--phase must be a positive integer")
+    if args.through_phase is not None and args.through_phase < 1:
+        parser.error("--through-phase must be a positive integer")
+    if args.through_phase is not None and args.phase is None:
+        parser.error("--through-phase requires --phase")
+    if (
+        args.phase is not None
+        and args.through_phase is not None
+        and args.phase > args.through_phase
+    ):
+        parser.error("--phase must be less than or equal to --through-phase")
     if args.phase is not None and args.mode != "next":
         parser.error("--phase cannot be combined with --mode")
     if args.docs_path is not None and args.phase is None:
         parser.error("--docs-path requires --phase")
     if args.docs_path is not None and args.docs_dir is not None:
         parser.error("--docs-path cannot be combined with --docs-dir")
+    if (
+        args.docs_path is not None
+        and args.through_phase is not None
+        and args.phase != args.through_phase
+    ):
+        parser.error("--docs-path cannot be used with a multi-phase range")
 
     return args
 
@@ -455,6 +538,7 @@ def main(argv: list[str] | None = None) -> int:
             args.phase,
             args.docs_dir,
             args.docs_path,
+            args.through_phase,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
