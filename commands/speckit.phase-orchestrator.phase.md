@@ -154,9 +154,10 @@ over every default below and must be propagated to every affected worker.
 ## Build Stage Handoffs
 
 Use `.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`,
-`schemas/phase-handoff.schema.json`, and `schemas/phase-report.schema.json` as
-the v2 contracts. Every handoff must include `report_contract` with the report
-schema ID, schema version `2.0.0`, and the same fixed stage as the assignment.
+`.specify/extensions/phase-orchestrator/schemas/phase-handoff.schema.json`, and
+`.specify/extensions/phase-orchestrator/schemas/phase-report.schema.json` as the
+v2 contracts. Every handoff must include `report_contract` with the report schema
+ID, schema version `2.0.0`, and the same fixed stage as the assignment.
 Send the matching stage-specific report form from the worker prompt with every
 handoff and require every array field, using `[]` when empty.
 

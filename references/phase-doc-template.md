@@ -77,8 +77,9 @@ Never include raw logs or secrets.
 
 Include this styled Mermaid diagram unless the user explicitly opted out. Keep
 labels short and copy the dark/emerald `classDef` and `linkStyle` lines from
-`references/mermaid-style.md` exactly unless the project already has diagram
-styling. Every shown validation step must also appear above.
+`.specify/extensions/phase-orchestrator/references/mermaid-style.md` exactly
+unless the project already has diagram styling. Every shown validation step
+must also appear above.
 
 ```mermaid
 flowchart LR
@@ -120,6 +121,7 @@ follow-up work. Write `None` only when there are no caveats.
 ````
 
 The exact final HTML comment is the durable workflow-complete marker consumed
-by `scripts/phase_tasks.py`. Its presence means the document records a
-phase-safe fresh verification, including any strictly proven deferred findings;
-it is not merely a documentation-exists flag.
+by `.specify/extensions/phase-orchestrator/scripts/phase_tasks.py`. Its presence
+means the document records a phase-safe fresh verification, including any
+strictly proven deferred findings; it is not merely a documentation-exists
+flag.

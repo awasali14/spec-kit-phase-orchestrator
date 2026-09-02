@@ -26,6 +26,9 @@ These are the authoritative development principles for current work.
    report and handoff wire schemas at `2.0.0` until their shapes change.
 7. Preserve resolved issues and historical decisions. Add a superseding entry
    instead of deleting or rewriting history.
+8. Keep parent orchestration policy separate from direct worker instructions,
+   and use installed `.specify/extensions/phase-orchestrator/` paths for
+   extension-internal files referenced by runtime commands and templates.
 
 ## Issue Index
 
@@ -33,6 +36,8 @@ These are the authoritative development principles for current work.
 | --- | --- | --- | --- | --- | --- |
 | PO-001 | 2026-08-27 | Addressed | Baseline, verification, routing | Baseline impact analysis and first verification were too narrow; baseline evidence incorrectly took precedence over in-phase remediation. | Phase Orchestrator 2.1.0 reliability update; `PO-001` record below |
 | PO-002 | 2026-08-27 | Addressed | All validation-running stages | Sandbox restrictions could be misclassified as code failures or consume remediation attempts. | Phase Orchestrator 2.1.0 validation environment policy; `PO-002` record below |
+| PO-003 | 2026-09-02 | Addressed | Handoffs, validation routing, verification | Compressed wording blurred parent/worker instructions, parent permission ordering, and the evidence requirement for phase-introduced regressions. | `PO-003` record below |
+| PO-004 | 2026-09-02 | Addressed | Runtime extension references | Agent-facing contracts mixed source-repository-relative paths with installed extension paths. | `PO-004` record below |
 
 Allowed statuses are `Open`, `Addressed`, and `Validated`.
 
@@ -100,6 +105,67 @@ Allowed statuses are `Open`, `Addressed`, and `Validated`.
 - **Regression guard:** `tests/test_phase_tasks.py` checks all five
   validation-running roles and parent routing language.
 
+### PO-003 — Explicit parent, worker, and transition wording
+
+- **Status:** Addressed
+- **Source:** Production-test follow-up prompt review on 2026-09-02.
+- **Observed behavior:** “Append the complete policy” could be read as copying
+  parent-facing numbered rules verbatim into a worker prompt; the environment
+  stop condition could be read as allowing the parent to stop before requesting
+  user authorization; and “`phase_introduced_regression` may not” omitted what
+  was prohibited and could be mistaken for a remediation restriction.
+- **Root cause:** Concise wording crossed role boundaries, left permission
+  ordering implicit in a final boolean condition, and used an elided comparison
+  in the verification report guidance.
+- **Decision:** The orchestrator appends the direct worker-facing validation
+  block, never its numbered parent policy. A parent-level authorization request
+  is mandatory before an environment blocker may stop the workflow. A
+  `phase_introduced_regression` requires comparable non-null baseline evidence
+  but remains remediable when its repair is in scope.
+- **Changes:** Named the exact worker-facing block and prohibited verbatim use
+  of the parent policy; made the authorization-before-stop sequence explicit;
+  replaced the ambiguous “may not” sentence with an explicit evidence rule and
+  in-scope remediation outcome.
+- **Clarified existing behavior:** A sandbox-related `blocked` test report
+  enters the parent authorization and same-stage relaunch path. A final
+  non-environment test failure stops only after the parent validates evidence
+  that the focused gate is neither green nor eligible expected RED. These two
+  points required explanation but no contract change.
+- **Validation evidence:** Manually reviewed the complete handoff builder,
+  parent validation policy, test gate, verifier role, worker-facing environment
+  block, structured report guidance, and disposition ownership together.
+  Existing string-based contract tests cannot establish that this wording is
+  interpreted with the intended role and transition semantics.
+- **Regression guard:** Review generated worker prompts and parent transitions
+  semantically whenever these sections change; automated phrase checks remain
+  supplementary only.
+
+### PO-004 — Installed paths in runtime agent contracts
+
+- **Status:** Addressed
+- **Source:** Runtime-reference audit prompted by the 2026-09-02 wording review.
+- **Observed behavior:** A draft handoff instruction initially named the source
+  path `references/worker-prompt-template.md` instead of its installed path. A
+  wider audit found the same existing pattern for the handoff/report schemas and
+  for Mermaid-style and parser references in the phase-document template.
+- **Root cause:** Runtime agent instructions and source-repository documentation
+  used the same shorthand even though their path roots differ after extension
+  installation.
+- **Decision:** Commands and reference templates executed or read in a target
+  project use `.specify/extensions/phase-orchestrator/` paths for internal
+  extension files. Development plans, repository documentation, tests, and
+  source examples may retain source-relative paths when they describe this
+  repository rather than an installed runtime.
+- **Changes:** Corrected the orchestrator’s worker-template, handoff-schema, and
+  report-schema references and the phase-document template’s Mermaid-style and
+  parser references. Left source-oriented documentation unchanged.
+- **Validation evidence:** Audited extension-internal path references across
+  commands, worker/document templates, schemas, documentation, examples, tests,
+  and publication material; classified each occurrence by runtime versus source
+  context before editing.
+- **Regression guard:** Repeat the runtime/source classification during prompt
+  reviews and verify installed paths in the release-archive installation test.
+
 ## Direction History
 
 - **2026-08-27 — Scope before origin.** A proven, repairable in-phase issue is
@@ -113,6 +179,13 @@ Allowed statuses are `Open`, `Addressed`, and `Validated`.
   outside execution is preferred, sandbox execution is the immediate fallback,
   and only plausible environment failures trigger an exact outside rerun. This
   supersedes undifferentiated validation failure handling.
+- **2026-09-02 — Explicit instruction ownership and ordering.** Parent policy is
+  not worker prompt text; direct worker wording is appended from the worker
+  template, and parent authorization precedes any environment-blocker stop.
+- **2026-09-02 — Runtime paths are installation-rooted.** Agent-facing commands
+  and templates resolve extension-internal files through
+  `.specify/extensions/phase-orchestrator/`; source-relative paths remain for
+  repository-oriented material only.
 
 ## Open Follow-ups
 
@@ -130,3 +203,8 @@ Allowed statuses are `Open`, `Addressed`, and `Validated`.
 - Repeat manual production integration tests on supported agents with at least
   one real sandbox-denied outside rerun path; record results without rewriting
   the decisions above.
+- Inspect a generated validation-worker prompt in a production-style run to
+  confirm it contains the direct environment block and no numbered parent
+  orchestration policy.
+- During the release-archive installation test, resolve every internal path
+  named by the installed command and reference templates from a target project.
