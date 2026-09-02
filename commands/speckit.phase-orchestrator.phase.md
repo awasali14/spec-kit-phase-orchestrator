@@ -2,7 +2,7 @@
 description: "Use /speckit.phase-orchestrator.phase or $speckit-phase-orchestrator-phase to run Spec Kit tasks.md through isolated regression-baseline, test, implementation, verification, remediation, and documentation agents with parent-owned gated commits."
 ---
 
-# Spec Kit Phase Orchestrator 2.0
+# Spec Kit Phase Orchestrator 2.1
 
 Run an existing Spec Kit `tasks.md` through context-isolated stage agents. This
 companion workflow must not replace, bypass, or modify official
@@ -186,8 +186,50 @@ only when useful. Route other relevant skills and automatically selected
 frontend/backend skills and MCPs only to the phase stages that need them.
 Include the selected MCPs, applicable MCP opt-outs, and Exa-first web-search
 policy in each handoff. Keep operational notes similarly scoped.
+Append the complete Validation Execution Environment policy to every
+baseline-verification, test, implementation, verification, and remediation
+handoff. Documentation workers do not receive it because they do not run
+project validation.
 Do not leak parent orchestration context. Only the documentation stage receives
 the phase document path/template or Mermaid instructions.
+
+## Validation Execution Environment
+
+Apply this policy whenever the parent or a baseline-verification, test,
+implementation, verification, or remediation worker runs project validation:
+
+1. Prefer execution outside the Codex sandbox when an already-authorized
+   outside route is available.
+2. If outside execution is not currently permitted, run the exact command
+   inside the sandbox instead of stopping immediately.
+3. Use a sandbox pass or ordinary assertion/product failure normally.
+4. When the sandbox failure is plausibly caused by filesystem or socket
+   permission, blocked network/service/database/container access, restricted
+   subprocess execution, or sandbox termination, do not classify it as a code
+   regression or in-phase defect.
+5. The worker running the validation requests user permission to rerun the
+   exact command outside the sandbox. When permission is granted, that worker
+   runs the command before returning, treats the outside result as
+   authoritative, and records both the exact command and environment used.
+6. If the worker cannot request permission, permission is denied, or outside
+   execution remains unavailable, it returns an environment blocker with the
+   command, sandbox evidence, and a caveat that the exact outside rerun was
+   unavailable. A verifier uses an `inconclusive` finding with disposition
+   `block`. Baseline-verification, test, implementation, and remediation
+   workers use disposition `null`, preserving the original rule that only a
+   verifier owns a blocking disposition. Do not consume a remediation attempt
+   or attribute a product defect from that result; do not add report fields.
+7. After validating a worker's environment-blocker report and observed
+   manifest, the parent must not stop immediately. The parent asks the user to
+   authorize the exact outside command. When permission is granted, relaunch a
+   fresh isolated worker for that same stage and assignment, require the exact
+   outside rerun, and continue the normal stage gate from its new report. Keep
+   any scope-clean reviewed changes from the blocked stage as known same-stage
+   state, never as protected unrelated work, and do not commit them before the
+   relaunched worker completes. Neither the blocker nor this relaunch consumes
+   a remediation attempt. Stop and report the environment blocker only when
+   the parent-level permission request is denied or outside execution remains
+   unavailable.
 
 ## Stage Sequence
 
@@ -226,14 +268,20 @@ remediation, and permits documentation.
 Launch a fresh `baseline_verification` agent before phase mutations.
 
 1. Make it strictly read-only and never commit eligible. Assign no task IDs.
-2. Identify suitable regression commands from the phase scope, repository
-   configuration, and existing validation. Run them with non-writing settings
-   and record the exact command, a compact non-secret environment fingerprint,
-   status, failing test identities, and normalized material failure signatures.
+2. Treat commands in `tasks.md` as minimum coverage. Identify changed or
+   removed behavior, search its callers, references, fixtures,
+   parameterizations, and tests, and map every affected subsystem. Identify
+   suitable regression commands from the phase scope, repository configuration,
+   and existing validation, then run the complete bounded suite for every
+   affected subsystem with non-writing settings. Record the exact command, a
+   compact non-secret environment fingerprint, status, failing test identities,
+   and normalized material failure signatures.
 3. A pre-existing regression does not stop this stage. Record unavailable or
    non-comparable baseline evidence explicitly and continue; it makes any later
    failure of that command ineligible for deferral.
-4. Preserve this evidence through every later handoff in the phase. The final
+4. Report every excluded or untested affected surface as a caveat. Preserve the
+   affected-subsystem map, complete command surface, and evidence through every
+   later handoff in the phase. The final
    verifier must rerun the exact baseline commands; it may add other suitable
    regression commands, but a newly failing command without comparable baseline
    evidence has uncertain attribution.
@@ -256,12 +304,14 @@ Assign only incomplete `test_tasks`.
    collect and execute correctly and every failure is attributable to missing
    assigned implementation.
 4. Require the worker to correct failures within the assigned test scope and
-   rerun the focused gate as needed. If a syntax, collection, fixture,
+   rerun the focused gate as needed. Plausibly sandbox-related environment
+   failures follow the Validation Execution Environment policy and return
+   `blocked`, not `failed`. If another syntax, collection, fixture,
    infrastructure, environment, flaky, or unrelated failure remains after
    available in-scope correction, require the worker to restore assigned
    checkboxes to their baseline unchecked state and report the gate as failed.
-   After reviewing that final report, the parent stops the workflow without
-   committing the test-stage changes.
+   After reviewing that final non-environment report, the parent stops the
+   workflow without committing the test-stage changes.
 5. Review the exact manifest. With commits enabled, stage only those paths and
    commit an eligible intentional change as:
 
@@ -311,25 +361,43 @@ result, including `unresolved` or failed focused validation.
 
 1. Make it strictly read-only. It must not modify checkboxes, source, tests,
    snapshots, caches, coverage, reports, or documentation.
-2. Require a structured report with separate focused, independent-phase, and
-   suitable regression results, plus scope/artifact findings and one verdict.
+2. On the first verification, independently inspect the actual phase diff and
+   discover affected subsystems by following changed or removed behavior to its
+   callers, references, fixtures, parameterizations, and tests. Treat commands
+   in `tasks.md` as minimum coverage. Require a structured report with separate
+   focused, independent-phase, exact-baseline, and complete bounded
+   affected-subsystem results, plus scope/artifact findings, caveats for every
+   excluded or untested affected surface, and one verdict. Continue all planned
+   commands after failures unless execution becomes unsafe, and aggregate all
+   related in-phase failures into one report before remediation. On every later
+   verification, require the verifier to preserve and rerun this expanded
+   verification surface; it may expand but never narrow it.
    The verifier, not an implementation or remediation worker, owns technical
    attribution and proposes `remediate`, `defer`, or `block`; the parent applies
    downstream-safety and attempt-cap policy to the final transition.
 3. Confirm the working tree and index exactly match the pre-verification
    baseline. Reject any verifier-created path. A verifier never commits.
-4. Compare every baseline regression command using the same command and a
-   comparable environment. A regression is phase introduced or worsened when
+4. Apply scope-first decision precedence. First decide whether the requirement
+   and repair belong to the current phase. A proven, repairable in-phase issue
+   is `phase_scoped_failure` or `defective_test` with disposition `remediate`,
+   even with `baseline_evidence: null` and uncertain or not-applicable origin
+   attribution. Never block in-phase remediation solely because baseline
+   coverage was incomplete. Then compare every baseline regression command
+   using the same command and a comparable environment to determine origin. A
+   regression is phase introduced or worsened when
    the baseline passed but the current command fails, or when the current result
    adds failing test identities or materially changes a baseline failure
-   signature. Send it to remediation when an in-scope repair is possible.
+   signature. `phase_introduced_regression` requires comparable non-null
+   baseline evidence. Send it to remediation when an in-scope repair is possible.
 5. Classify a regression as `preexisting_unrelated_regression` with proposed
    disposition `defer` only when its failing test identities and material
    signatures are unchanged, no failures were added, focused and
    independent-phase validation pass, and attribution evidence is confirmed.
    Return `downstream_safe: null` until the parent checks the remaining queue.
-   Missing, non-comparable, or contradictory evidence is `inconclusive` and
-   blocks.
+   Missing, non-comparable, or contradictory evidence prevents confirmed
+   origin attribution and deferral. It does not override a separately proven
+   in-phase issue. Use `inconclusive` with disposition `block` for uncertain
+   scope, a required cross-phase repair, or an unproven out-of-phase failure.
 6. Before accepting `defer`, the parent reruns the parser in `all` mode for
    metadata and compares the finding's affected paths and components with every
    later queued workflow-incomplete phase's task text and paths, purpose,
@@ -343,8 +411,10 @@ result, including `unresolved` or failed focused validation.
 7. On `passed`, `passed_with_deferred_findings`, or an accepted
    test-authoring-only `expected_red`, continue to documentation. On
    `remediate`, launch remediation when fewer than two attempts have run. On
-   `block`, or when no attempt remains, stop without broadening the phase;
-   retain any earlier eligible progress commits.
+   an environment `block`, first complete the parent permission and fresh
+   same-stage relaunch policy above. On any other `block`, or when no attempt
+   remains, stop without broadening the phase; retain any earlier eligible
+   progress commits.
 
 ### Remediation And Fresh Re-verification
 
@@ -381,7 +451,8 @@ result, including `unresolved` or failed focused validation.
    In both modes, launch a fresh read-only verifier regardless of the
    remediation validation result and treat the reviewed changes as known phase
    state, not protected unrelated work.
-5. Each remediation plus its fresh verification consumes one attempt. Permit at
+5. Each remediation plus its fresh verification consumes one attempt. An
+   environment blocker does not consume an attempt. Permit at
    most two complete cycles. After attempt one, repeat only for a verifier
    disposition of `remediate`; after attempt two, any non-phase-safe verdict
    stops the workflow.
@@ -447,8 +518,13 @@ when a stage report is schema-invalid, mismatches the assignment or observed
 manifest, contradicts the stage contract, or lacks enough evidence for the
 parent gate. Stop after the
 verifier confirms a required failure cannot be resolved without crossing phase
-scope, attributes a regression as uncertain, cannot prove downstream safety for
-a proposed deferral, or returns a non-phase-safe verdict after attempt two.
+scope, otherwise confirms uncertain scope, a required cross-phase repair, or an
+unproven out-of-phase failure; cannot prove downstream safety for a proposed
+deferral; returns an unresolved environment blocker after the outside-rerun
+policy; or returns a non-phase-safe verdict after attempt two. Do not stop or
+withhold in-phase remediation solely because baseline evidence is incomplete,
+and do not merely stop because a verifier attributes a regression as uncertain
+when the issue is separately proven to be repairable and in phase.
 
 Report selected phase, stage outcomes, task IDs, per-stage manifests, commits
 or `--no-commit`, regression-baseline and attribution evidence, validation

@@ -9,7 +9,7 @@ Extension ID: `phase-orchestrator`
 
 Extension Name: `Phase Orchestrator`
 
-Version: `2.0.0`
+Version: `2.1.0`
 
 Description: `Orchestrate each Spec Kit tasks.md phase through isolated regression-baseline, test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.`
 
@@ -17,9 +17,9 @@ Author: `awasali14`
 
 Repository: `https://github.com/awasali14/spec-kit-phase-orchestrator`
 
-Planned Download URL: `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip`
+Planned Download URL: `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.1.0.zip`
 
-Download URL status: pending v2.0.0 tag creation, release publication, and
+Download URL status: pending v2.1.0 tag creation, release publication, and
 release-archive verification. The URL is not yet an installation claim.
 
 License: `MIT`
@@ -42,8 +42,9 @@ Tags: `workflow, implementation, orchestration, tasks`
 3. Keeps `/speckit.implement` untouched as the official implementation command.
 4. Gives each stage a compact v2 handoff and prevents workers from owning Git,
    spawning workers, running the orchestrator, or crossing phase boundaries.
-5. Uses strict before/after regression attribution, typed verifier findings,
-   parent-owned dispositions, and at most two remediation/re-verification cycles.
+5. Discovers complete affected-subsystem suites, verifies them independently,
+   classifies scope before origin attribution, and preserves the expanded test
+   surface through at most two remediation/re-verification cycles.
 6. Defers only proven pre-existing, unchanged, unrelated regressions with safe
    downstream phases; uncertainty and required scope crossing block.
 7. Produces phase documentation with aggregate evidence and a durable
@@ -51,9 +52,28 @@ Tags: `workflow, implementation, orchestration, tasks`
 8. Creates a parent-owned verified implementation/remediation commit with
    exact-path staging and dirty-state protection; `--no-commit` keeps changes unstaged.
 
-## Verification Record
+## Current v2.1.0 Pre-Release Verification Record
 
-v2.0.0 pre-release verification completed on 2026-08-07:
+Automated verification completed on 2026-08-27:
+
+1. All 84 unit and contract tests passed with
+   `python3 -m unittest discover -s tests`.
+2. Coverage includes affected-subsystem discovery, expanded first verification,
+   preserved re-verification, scope-first remediation with null baseline
+   evidence, mandatory baseline evidence for phase-introduced regressions,
+   sandbox-aware execution and environment blockers, version/schema boundaries,
+   and tracker packaging rules, in addition to the existing parser and workflow
+   contracts.
+3. `git diff --check` passed.
+
+Release-archive installation, supported-agent production-flow retesting, and
+minimum Spec Kit compatibility remain pending release-candidate gates. This
+automated result is not an archive-install claim.
+
+## Superseded Pre-Release Verification Record
+
+Historical v2.0.0 pre-release verification completed on 2026-08-07. This is
+superseded evidence and must not be presented as v2.1.0 validation:
 
 This record predates the attribution-aware baseline and deferred-finding
 changes. Their automated contract suite passes, but disposable forward testing
@@ -123,9 +143,9 @@ Historical v1.0.0 testing completed:
 8. `specify extension update phase-orchestrator` reported that the extension
    catalog entry was not found.
 
-The v2.0.0 release-archive test remains pending because no v2.0.0 tag or release
-has been published. Final minimum-version and non-Codex integration retesting
-also remain release-candidate tasks.
+No v2.0.0 tag or release was published. The v2.1.0 release-archive test, final
+minimum-version testing, and non-Codex integration retesting remain
+release-candidate tasks.
 
 ## Prerelease Guardrails
 

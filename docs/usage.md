@@ -116,21 +116,43 @@ committed tests directly, or the reviewed test manifest under `--no-commit`,
 and runs the complete focused phase-test gate. If it cannot reach green, it
 returns typed unresolved findings for independent verification rather than
 making the final blocker decision. Verification is strictly read-only and
-reports focused, independent-phase, and suitable regression validation. Every
-remediation outcome is freshly verified. Before trusting any result, the parent
+independently analyzes the actual phase diff, follows changed behavior through
+callers, references, fixtures, parameterizations, and tests, and reports
+focused, independent-phase, exact-baseline, and complete bounded
+affected-subsystem validation. Commands in `tasks.md` are minimum coverage. It
+continues all safe planned commands after a failure, aggregates related
+in-phase findings, and records excluded surfaces as caveats. Every remediation
+outcome is freshly verified. Before trusting any result, the parent
 validates the completed report against the report schema and cross-checks it
 against the assignment and observed Git manifest. Eligible implementation and
 remediation work is committed immediately as a reversible checkpoint; later
-verification still controls routing and documentation eligibility.
+verification still controls routing and documentation eligibility. Each later
+verifier preserves the expanded verification surface established by the first.
 
-A regression may be deferred only when the pre-phase and current commands and
+A verifier decides repair scope before baseline origin. A proven, repairable
+in-phase failure or defective test goes to remediation even when baseline
+evidence is incomplete. A regression may be called phase-introduced or deferred
+only when the pre-phase and current commands and
 environments are comparable, failing test identities and material signatures
 are unchanged, focused and independent-phase gates pass, and the parent proves
 later queued phases do not depend on the affected behavior. The current phase
 is excluded because it remains parser-incomplete until documentation. A new or
-worsened regression is remediated within phase scope; uncertainty or required
-scope crossing stops the workflow. A test-authoring-only phase may still
-complete with attributable expected RED.
+worsened regression is remediated within phase scope; uncertain scope, required
+cross-phase repair, or an unproven out-of-phase failure stops the workflow. A
+test-authoring-only phase may still complete with attributable expected RED.
+
+Whenever a validation-running stage executes a project command, it prefers an
+already-authorized route outside the Codex sandbox. If none is currently
+permitted, it runs the exact command inside. Passing results and ordinary
+assertion/product failures are used normally. A plausibly sandbox-related
+failure is never attributed to the code until the exact command is rerun
+outside with user permission. The worker requests approval first. If it cannot
+obtain approval, the parent asks the user and relaunches a fresh worker for the
+same stage when approved. The outside result is authoritative. Only a denied or
+still-unavailable parent request produces an environment blocker with the
+command and a compact signature. Neither the blocker nor relaunch consumes a
+remediation attempt. Documentation workers do not run project validation and
+are unaffected by this policy.
 
 The documentation agent receives aggregate stage reports, SHAs, manifests,
 baseline comparisons, and deferred findings. It changes only the resolved phase

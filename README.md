@@ -99,14 +99,32 @@ Without a custom location, generated Markdown phase documents go under
 
 By default, the parent orchestrator records HEAD and the working-tree state
 before every stage and launches a fresh read-only regression-baseline worker
-before phase mutations. Test commits may be intentionally RED only when
+before phase mutations. Baseline discovery follows changed behavior through
+callers, references, fixtures, parameterizations, and tests, and treats commands
+named in `tasks.md` as minimum coverage. Test commits may be intentionally RED
+only when
 failures are caused by missing assigned implementation. The parent validates
 every completed worker report against the supplied stage-specific report form,
 then commits each eligible implementation or remediation manifest immediately.
 Fresh verification still runs after implementation and after every remediation
-commit.
+commit. The first verifier independently maps the actual phase diff and runs
+focused, independent-phase, exact-baseline, and complete bounded
+affected-subsystem suites; later verifiers preserve that expanded surface.
 A strictly proven pre-existing, unrelated, unchanged regression may be
 recorded as a deferred finding without hiding it from phase documentation.
+For failures, scope is decided before origin: a proven, repairable in-phase issue
+is remediated even when baseline evidence is incomplete. Baseline evidence is
+still required to claim a phase-introduced regression or defer a pre-existing
+one.
+
+Project validation prefers an already-authorized route outside the Codex
+sandbox. When none is available, the exact command runs inside. A plausible
+sandbox restriction requires permission for an exact outside rerun before code
+attribution. The worker requests permission first; if it cannot obtain
+permission, the parent asks the user and relaunches a fresh worker for the same
+stage when approved. Only a denied or still-unavailable parent-level request
+becomes an environment blocker, and neither the blocker nor relaunch consumes a
+remediation attempt.
 
 To run every stage and gate while leaving all reviewed changes unstaged and
 uncommitted, add `--no-commit` or clearly say not to commit:
@@ -201,8 +219,10 @@ Supporting scripts and reference templates remain under
    stop the workflow; unrelated pre-existing files remain untouched.
 7. Workers never stage, commit, push, spawn workers, rerun the orchestrator, or
    cross phase boundaries. The parent alone owns exact-path Git operations.
-8. Suspected blockers are independently classified; uncertain attribution or
-   unproven downstream safety stops the workflow.
+8. Suspected blockers are independently classified; proven in-phase issues are
+   remediated before origin attribution, while uncertain scope, required
+   cross-phase repair, unproven out-of-phase failure, or unproven downstream
+   safety stops the workflow.
 9. Schema-valid reports do not replace fresh verification; they make required
    evidence and internal consistency machine-checkable before parent policy.
 

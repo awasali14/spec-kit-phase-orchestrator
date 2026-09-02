@@ -188,10 +188,15 @@ the exact scope-clean implementation manifest for either `passed` or
 suspected findings.
 
 The verifier receives only the phase scope, manifests, SHAs, baseline evidence,
-deferred findings, and validation summaries. It remains read-only, reruns exact
-baseline commands, and returns typed focused, independent-phase, regression,
-attribution, and disposition evidence. A phase-introduced regression is first
-remediated within scope. A pre-existing failure is deferred only when it is
+deferred findings, validation summaries, and the preserved verification
+surface. It remains read-only, independently maps the actual diff through
+callers, references, fixtures, parameterizations, and tests, then runs focused,
+independent-phase, exact-baseline, and complete affected-subsystem suites. It
+continues safe planned commands, aggregates related failures, and returns typed
+attribution and disposition evidence. Scope comes first: a proven in-phase
+failure is remediated even with incomplete baseline evidence. A
+`phase_introduced_regression` requires baseline evidence. A pre-existing failure
+is deferred only when it is
 unchanged, unrelated, and safe for remaining phases. Uncertainty blocks.
 
 Every remediation result, including unresolved focused validation, receives a
@@ -199,6 +204,13 @@ fresh verifier. Before that verifier runs, each schema-valid, scope-clean
 remediation result gets its own exact-path progress commit. After two
 non-phase-safe cycles, the workflow stops but retains earlier eligible progress
 commits; it does not create an aggregate certificate commit.
+
+Plausible sandbox failures require the exact command to be rerun outside with
+permission before defect attribution. The worker requests approval first; if
+that fails, the parent asks the user and relaunches a fresh worker for the same
+stage when approved. Only a denied or still-unavailable parent request produces
+an environment blocker. Neither the blocker nor relaunch consumes a remediation
+attempt.
 
 Only the documentation handoff contains the execution-document and Mermaid
 instructions. Every worker is forbidden to stage, commit, push, spawn workers,

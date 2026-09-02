@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "phase-orchestrator"
   name: "Phase Orchestrator"
-  version: "2.0.0"
+  version: "2.1.0"
   description: "Orchestrate each Spec Kit tasks.md phase through isolated regression-baseline, test, implementation, verification, remediation, and documentation stages with parent-owned Git gates."
   author: "awasali14"
   repository: "https://github.com/awasali14/spec-kit-phase-orchestrator"

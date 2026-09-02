@@ -32,6 +32,10 @@ HANDOFF_SCHEMA = ROOT / "schemas" / "phase-handoff.schema.json"
 REPORT_SCHEMA = ROOT / "schemas" / "phase-report.schema.json"
 HANDOFF_SAMPLE = ROOT / "examples" / "sample-phase-handoff.json"
 CHANGELOG = ROOT / "CHANGELOG.md"
+EXTENSION_IGNORE = ROOT / ".extensionignore"
+ISSUES_TRACKER = ROOT / "issues-tracker.md"
+PUBLICATION_PLAN = ROOT / "speckit-phase-orchestrator-extension-publication-plan.md"
+SUBMISSION_NOTES = ROOT / "docs" / "submission-notes.md"
 WORKFLOW_MARKER = "<!-- phase-orchestrator:workflow-complete v2 -->"
 
 
@@ -784,6 +788,51 @@ class PhaseTasksParserTest(unittest.TestCase):
         ]:
             self.assertIn(expected, baseline)
 
+    def test_baseline_discovers_complete_affected_subsystem_coverage(self) -> None:
+        baseline = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Regression Baseline Role",
+            )
+        )
+
+        for expected in [
+            "minimum coverage",
+            "changed or removed behavior",
+            "callers",
+            "references",
+            "fixtures",
+            "parameterizations",
+            "complete bounded suite for every affected subsystem",
+            "excluded or untested affected surface",
+            "`caveats`",
+        ]:
+            self.assertIn(expected, baseline)
+
+    def test_initial_and_later_verification_preserve_expanded_surface(self) -> None:
+        verification = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Verification Role",
+            )
+        )
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for text in [verification, command]:
+            for expected in [
+                "actual phase diff",
+                "focused",
+                "independent-phase",
+                "exact baseline",
+                "complete bounded",
+                "affected subsystem",
+                "Continue all planned commands after",
+                "aggregate all related in-phase failures",
+                "preserve",
+                "never narrow",
+            ]:
+                self.assertIn(expected.lower(), text.lower())
+
     def test_each_role_is_context_isolated_and_sanitized(self) -> None:
         template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
         common = compact(section(template, "Common Envelope"))
@@ -892,6 +941,103 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("at most two complete", command)
         self.assertIn("regardless of the remediation validation result", command)
         self.assertIn("does not itself make the final stop decision", command)
+
+    def test_validation_running_workers_receive_sandbox_execution_policy(self) -> None:
+        template = WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        policy = compact(section(template, "Validation Execution Environment"))
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for role in [
+            "baseline-verification",
+            "test",
+            "implementation",
+            "verification",
+            "remediation",
+        ]:
+            self.assertIn(role, policy)
+            self.assertIn(role, command)
+        for expected in [
+            "prefer execution outside the Codex sandbox",
+            "run the exact command inside the sandbox",
+            "do not attribute it to the product",
+            "Request user permission to rerun that exact command outside the sandbox",
+            "perform the outside rerun before returning",
+            "result as authoritative",
+            "environment blocker",
+            "do not consume a remediation attempt",
+        ]:
+            self.assertIn(expected, policy)
+        self.assertNotIn("the parent can request permission", policy)
+        self.assertIn("Documentation workers do not receive it", command)
+
+    def test_sandbox_failure_requires_outside_rerun_before_attribution(self) -> None:
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+
+        for expected in [
+            "plausibly caused by filesystem or socket permission",
+            "worker running the validation requests user permission",
+            "treats the outside result as authoritative",
+            "permission is denied",
+            "outside execution remains unavailable",
+            "environment blocker with the command, sandbox evidence",
+            "Do not consume a remediation attempt",
+            "parent must not stop immediately",
+            "relaunch a fresh isolated worker for that same stage and assignment",
+            "Neither the blocker nor this relaunch consumes a remediation attempt",
+            "environment `block`, first complete the parent permission",
+        ]:
+            self.assertIn(expected, command)
+
+    def test_environment_blocker_uses_stage_valid_report_shapes(self) -> None:
+        validator = report_validator()
+        sandbox_evidence = {
+            "command": "pytest affected",
+            "environment_fingerprint": "codex-sandbox; python-3.12",
+            "status": "failed",
+            "failing_tests": [],
+            "failure_signatures": ["socket permission denied"],
+        }
+
+        for stage in [
+            "baseline_verification",
+            "test",
+            "implementation",
+            "verification",
+            "remediation",
+        ]:
+            report = base_report(stage)
+            report["status"] = "blocked"
+            report["validation"][0].update(
+                status="not_run",
+                summary="Exact outside rerun was unavailable after sandbox denial.",
+            )
+            finding = report_finding("block" if stage == "verification" else None)
+            finding.update(
+                kind="inconclusive",
+                attribution="uncertain",
+                confidence="confirmed",
+                baseline_evidence=None,
+                current_evidence=sandbox_evidence,
+                summary="Environment blocker; no product attribution.",
+            )
+            report["findings"] = [finding]
+            report["caveats"] = [
+                "User denied permission for the exact outside rerun."
+            ]
+            if stage == "remediation":
+                report["remediation_results"][0]["status"] = "unresolved"
+
+            self.assertTrue(validator.is_valid(report), stage)
+        contract = compact(
+            section(
+                WORKER_PROMPT_TEMPLATE.read_text(encoding="utf-8"),
+                "Structured Report Contract",
+            )
+        )
+        self.assertIn("without adding fields", contract)
+        self.assertIn("verification finding uses disposition `block`", contract)
+        self.assertIn("remediation use disposition `null`", contract)
+        self.assertIn("environment evidence, not product-defect attribution", contract)
 
     def test_verifier_prompt_omits_parent_transition_mechanics(self) -> None:
         verification = compact(
@@ -1242,6 +1388,48 @@ class PhaseTasksParserTest(unittest.TestCase):
         blocked["findings"][0]["disposition"] = "remediate"
         self.assertFalse(validator.is_valid(blocked))
 
+    def test_report_schema_allows_in_phase_remediation_without_baseline(self) -> None:
+        validator = report_validator()
+        verifier = base_report("verification", "unresolved")
+        finding = report_finding("remediate")
+        finding.update(
+            kind="phase_scoped_failure",
+            attribution="uncertain",
+            confidence="confirmed",
+            baseline_evidence=None,
+        )
+        verifier["findings"] = [finding]
+
+        self.assertTrue(validator.is_valid(verifier))
+
+    def test_report_schema_requires_baseline_for_phase_introduced_regression(self) -> None:
+        validator = report_validator()
+        verifier = base_report("verification", "unresolved")
+        finding = report_finding("remediate")
+        finding["kind"] = "phase_introduced_regression"
+        verifier["findings"] = [finding]
+
+        self.assertFalse(validator.is_valid(verifier))
+        finding["baseline_evidence"] = comparison_evidence("passed")
+        self.assertTrue(validator.is_valid(verifier))
+
+    def test_uncertain_scope_and_unproven_out_of_phase_failures_block(self) -> None:
+        validator = report_validator()
+        verifier = base_report("verification", "blocked")
+        finding = report_finding("block")
+        finding.update(
+            kind="inconclusive",
+            attribution="uncertain",
+            confidence="uncertain",
+            baseline_evidence=None,
+        )
+        verifier["findings"] = [finding]
+
+        self.assertTrue(validator.is_valid(verifier))
+        command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
+        self.assertIn("uncertain scope", command)
+        self.assertIn("unproven out-of-phase failure", command)
+
     def test_phase_report_schema_enforces_defer_and_expected_red_evidence(self) -> None:
         validator = report_validator()
         deferred = base_report("verification", "passed_with_deferred_findings")
@@ -1353,6 +1541,17 @@ class PhaseTasksParserTest(unittest.TestCase):
         missing_confidence = copy.deepcopy(verifier)
         del missing_confidence["findings"][0]["confidence"]
         self.assertFalse(Draft202012Validator(schema).is_valid(missing_confidence))
+
+        phase_introduced = copy.deepcopy(verifier)
+        phase_introduced["findings"][0].update(
+            kind="phase_introduced_regression",
+            disposition="remediate",
+            attribution="phase_introduced",
+            baseline_evidence=None,
+        )
+        self.assertFalse(Draft202012Validator(schema).is_valid(phase_introduced))
+        phase_introduced["findings"][0]["baseline_evidence"] = copy.deepcopy(evidence)
+        self.assertTrue(Draft202012Validator(schema).is_valid(phase_introduced))
 
     def test_provisional_finding_round_trips_into_fresh_verification(self) -> None:
         schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
@@ -1562,16 +1761,55 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertIn("never add a phase or continue beyond `end`", command)
         self.assertIn("Do not advance merely because task checkboxes are checked", command)
 
-    def test_version_and_public_contract_are_consistently_v2(self) -> None:
+    def test_version_and_public_contract_are_consistently_v2_1(self) -> None:
         extension = EXTENSION_FILE.read_text(encoding="utf-8")
         command = COMMAND_FILE.read_text(encoding="utf-8")
         changelog = CHANGELOG.read_text(encoding="utf-8")
+        handoff_schema = json.loads(HANDOFF_SCHEMA.read_text(encoding="utf-8"))
+        report_schema = json.loads(REPORT_SCHEMA.read_text(encoding="utf-8"))
 
-        self.assertIn('version: "2.0.0"', extension)
-        self.assertIn("# Spec Kit Phase Orchestrator 2.0", command)
-        self.assertRegex(changelog, r"(?m)^## 2\.0\.0\b")
+        self.assertIn('version: "2.1.0"', extension)
+        self.assertIn("# Spec Kit Phase Orchestrator 2.1", command)
+        self.assertRegex(changelog, r"(?m)^## 2\.1\.0 - Unreleased$")
+        self.assertEqual(handoff_schema["properties"]["schema_version"]["const"], "2.0.0")
+        self.assertEqual(report_schema["properties"]["schema_version"]["const"], "2.0.0")
+        self.assertEqual(WORKFLOW_MARKER, "<!-- phase-orchestrator:workflow-complete v2 -->")
         self.assertIn("official\n`/speckit.implement`", command)
         self.assertNotIn("/speckit.implement phase", command)
+
+    def test_issues_tracker_is_git_material_excluded_from_payload(self) -> None:
+        ignore = EXTENSION_IGNORE.read_text(encoding="utf-8").splitlines()
+        tracker = ISSUES_TRACKER.read_text(encoding="utf-8")
+        publication = PUBLICATION_PLAN.read_text(encoding="utf-8")
+
+        self.assertIn("issues-tracker.md", ignore)
+        for heading in [
+            "## Current Extension Direction",
+            "## Issue Index",
+            "## Issue Records",
+            "## Direction History",
+            "## Open Follow-ups",
+        ]:
+            self.assertIn(heading, tracker)
+        for issue_id in ["PO-001", "PO-002"]:
+            self.assertIn(issue_id, tracker)
+        for status in ["Open", "Addressed", "Validated"]:
+            self.assertIn(status, tracker)
+        self.assertIn("issues-tracker.md", publication)
+        self.assertIn("must not be included in an installed extension payload", publication)
+
+    def test_pending_release_docs_target_v2_1_and_preserve_v2_0_history(self) -> None:
+        submission = SUBMISSION_NOTES.read_text(encoding="utf-8")
+        publication = PUBLICATION_PLAN.read_text(encoding="utf-8")
+
+        self.assertIn("Version: `2.1.0`", submission)
+        self.assertIn("tags/v2.1.0.zip", submission)
+        self.assertIn("All 84 unit and contract tests passed", submission)
+        self.assertIn("Historical v2.0.0 pre-release verification", submission)
+        self.assertIn("superseded evidence", submission)
+        self.assertIn("release as `v2.1.0`", publication)
+        self.assertIn("GitHub Release v2.1.0", publication)
+        self.assertIn("historical `v2.0.0` pre-release evidence is superseded", publication)
 
     def test_documentation_examples_do_not_surface_removed_artifacts(self) -> None:
         public_paths = [

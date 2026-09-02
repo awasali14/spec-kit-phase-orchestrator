@@ -1,6 +1,6 @@
 # Spec Kit Phase Orchestrator Extension Publication Plan
 
-Last updated: 2026-08-07
+Last updated: 2026-08-27
 
 ## 1. Document Authority
 
@@ -34,7 +34,8 @@ official documentation wins. Update this plan before continuing.
 4. **Status: Completed** — The extension was manually tested successfully with
    Codex, Claude Code, and Cursor.
 5. **Status: In progress** — Post-`v1.0.0` improvements are being prepared for
-   release as `v2.0.0`.
+   release as `v2.1.0`. The historical `v2.0.0` pre-release evidence is superseded
+   and is not release evidence for `v2.1.0`.
 6. **Status: Not started** — Spec Kit community extension submission.
 
 ## 2. Product Decisions
@@ -132,6 +133,8 @@ versions are canonical:
     `docs/submission-notes.md`.
 12. **Status: Completed** — License: `LICENSE`.
 13. **Status: Completed** — Release history: `CHANGELOG.md`.
+14. **Status: Completed on 2026-08-27** — Development issue history:
+    `issues-tracker.md`.
 
 ## 4. Repository And Installed-Payload Contracts
 
@@ -150,6 +153,8 @@ clone on another computer contains everything needed to continue development.
    Commit `efa5a59` is present on both local and remote `dev`.
 6. **Status: Completed** — Keep `git-branch-plan.md` local-only unless a future
    decision explicitly makes it public.
+7. **Status: Completed on 2026-08-27** — Keep `issues-tracker.md` tracked in Git
+   as shared development history while excluding it from installed payloads.
 
 ### Installed Extension Contract
 
@@ -190,6 +195,8 @@ remaining available in the Git repository:
    `.codex/`, and `.tools/` as defensive development-install exclusions. These
    paths are not currently part of the tagged Git source archive, but local
    `--dev` installation must not copy them if they exist.
+10. **Status: Completed on 2026-08-27** — Added `issues-tracker.md`. It remains
+    Git-tracked shared development history and must not be included in an installed extension payload.
 
 ### Single Examples Document
 
@@ -223,7 +230,8 @@ without requiring files from the excluded `examples/` directory.
    tag archive because the official installer applies `.extensionignore` when
    creating the installed extension copy.
 4. **Status: Not started** — Verify the exact installed payload from the final
-   `v2.0.0` tag archive before submission.
+   `v2.1.0` tag archive before submission, including confirmation that
+   `issues-tracker.md` is excluded.
 
 ## 5. Branch And Release Workflow
 
@@ -248,17 +256,17 @@ without requiring files from the excluded `examples/` directory.
 
 Use this order for every release:
 
-1. **Status: Not started for v2.0.0** — Finish and push tested work on `dev`.
-2. **Status: Not started for v2.0.0** — Switch to `main` and update it from
+1. **Status: Not started for v2.1.0** — Finish and push tested work on `dev`.
+2. **Status: Not started for v2.1.0** — Switch to `main` and update it from
    `origin/main` using `git pull --ff-only origin main`.
-3. **Status: Not started for v2.0.0** — Merge `dev` into `main`.
-4. **Status: Not started for v2.0.0** — Run the complete release verification
+3. **Status: Not started for v2.1.0** — Merge `dev` into `main`.
+4. **Status: Not started for v2.1.0** — Run the complete release verification
    suite on the exact `main` commit.
-5. **Status: Not started for v2.0.0** — Create annotated tag `v2.0.0` from the
+5. **Status: Not started for v2.1.0** — Create annotated tag `v2.1.0` from the
    verified `main` commit.
-6. **Status: Not started for v2.0.0** — Push `main` and `v2.0.0`.
-7. **Status: Not started for v2.0.0** — Publish the GitHub release.
-8. **Status: Not started for v2.0.0** — If `main` contains release-only commits
+6. **Status: Not started for v2.1.0** — Push `main` and `v2.1.0`.
+7. **Status: Not started for v2.1.0** — Publish the GitHub release.
+8. **Status: Not started for v2.1.0** — If `main` contains release-only commits
    not already in `dev`, merge `main` back into `dev` and push `dev`.
 9. **Status: Approved** — Never create a release tag before the release commit
    reaches `main`, and never treat a tag as a development branch to merge.
@@ -279,7 +287,7 @@ release-only changes back to `dev`.
 4. **Status: Completed** — The current development environment uses Spec Kit
    CLI 0.13.0.
 5. **Status: Not started** — Re-run the final compatibility suite against
-   0.8.7 after all `v2.0.0` changes. If this is not done, raise the declared
+   0.8.7 after all `v2.1.0` changes. If this is not done, raise the declared
    minimum to the oldest version actually verified for the release.
 
 ### Python
@@ -401,22 +409,24 @@ completed even when later release work refines their outputs.
 7. **Status: Completed on 2026-07-04** — Verified the installed extension was
    enabled and its Codex wrapper existed.
 
-## 8. Current v2.0.0 Work Plan
+## 8. Current v2.1.0 Work Plan
 
 ### Documentation And Metadata
 
 1. **Status: Completed on 2026-08-07** — Align public documentation with the staged-agent
    architecture and workflow-completion resume behavior.
-2. **Status: Completed on 2026-08-07** — Use the approved concise v2.0.0 canonical and
+2. **Status: Completed on 2026-08-07** — Use the approved concise v2 canonical and
    integration-facing descriptions.
-3. **Status: Completed on 2026-08-05** — Set the manifest version to `2.0.0`
+3. **Status: Completed on 2026-08-27** — Set the manifest version to `2.1.0`
    while retaining manifest schema version `1.0`.
-4. **Status: Completed on 2026-08-05** — Add an unreleased `2.0.0` changelog
-   entry covering the staged architecture and safety contract.
+4. **Status: Completed on 2026-08-27** — Add an unreleased `2.1.0` changelog
+   entry covering the verification reliability update while retaining the
+   superseded `2.0.0` pre-release history.
 5. **Status: Not started** — Update README installation instructions to use the
-   real `v2.0.0` archive only after that tag exists and the archive is verified.
+   real `v2.1.0` archive only after that tag exists and the archive is verified.
 6. **Status: Completed on 2026-08-07** — Keep `docs/submission-notes.md` aligned
-   with the planned v2.0.0 metadata and record completed pre-release evidence.
+   with the planned v2.1.0 metadata and keep historical v2.0.0 pre-release
+   evidence explicitly superseded.
 
 ### Packaging
 
@@ -445,7 +455,7 @@ completed even when later release work refines their outputs.
 
 ### Repository Verification
 
-1. **Status: Completed on 2026-08-07** — `git diff --check` passes.
+1. **Status: Completed on 2026-08-27** — `git diff --check` passes.
 2. **Status: Completed on 2026-08-07** — `git status --short` contains only
    intentional release changes before commit.
 3. **Status: Completed on 2026-08-07** — No secrets, credentials, private project
@@ -455,16 +465,19 @@ completed even when later release work refines their outputs.
 
 ### Automated Verification
 
-1. **Status: Completed on 2026-08-07** — Run
+1. **Status: Completed on 2026-08-27** — All 84 tests pass with
    `python3 -m unittest discover -s tests`.
 2. **Status: Completed on 2026-08-07** — Run parser smoke tests for `next`,
    explicit phase, and `all`.
-3. **Status: Completed on 2026-08-07** — Validate workflow completion and
+3. **Status: Completed on 2026-08-27** — Validate workflow completion and
    verification resume, empty stages, classification, custom docs, role
    sanitization, remediation cap, expected RED and green gates, exact staging,
-   dirty state, no-change stages, `--no-commit`, and documentation completion.
+   dirty state, no-change stages, `--no-commit`, documentation completion,
+   complete affected-subsystem discovery, scope-first routing, sandbox-aware
+   execution, schema/version boundaries, and tracker packaging.
 4. **Status: Completed on 2026-08-07** — Load `extension.yml` through a Spec
-   Kit 0.13.0 development install and confirm version 2.0.0 is enabled.
+   Kit 0.13.0 development install and confirm version 2.0.0 is enabled. This is
+   superseded pre-release evidence and must be repeated for 2.1.0.
 
 ### Development Installation
 
@@ -495,25 +508,25 @@ completed even when later release work refines their outputs.
 
 ### Release Archive
 
-1. **Status: Not started for v2.0.0** — Confirm remote tag `v2.0.0` exists.
-2. **Status: Not started for v2.0.0** — Confirm the archive URL returns a valid
+1. **Status: Not started for v2.1.0** — Confirm remote tag `v2.1.0` exists.
+2. **Status: Not started for v2.1.0** — Confirm the archive URL returns a valid
    ZIP download.
-3. **Status: Not started for v2.0.0** — Install from:
+3. **Status: Not started for v2.1.0** — Install from:
 
    ```text
-   https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip
+   https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.1.0.zip
    ```
 
-4. **Status: Not started for v2.0.0** — Run `specify extension list` and verify
-   `Phase Orchestrator (v2.0.0)` is enabled.
-5. **Status: Not started for v2.0.0** — Inspect the archive-installed payload
-   against Section 4.
-6. **Status: Not started for v2.0.0** — Verify command registration and a real
+4. **Status: Not started for v2.1.0** — Run `specify extension list` and verify
+   `Phase Orchestrator (v2.1.0)` is enabled.
+5. **Status: Not started for v2.1.0** — Inspect the archive-installed payload
+   against Section 4, including exclusion of `issues-tracker.md`.
+6. **Status: Not started for v2.1.0** — Verify command registration and a real
    command run from the archive installation.
 
 Do not submit if any required final verification remains incomplete.
 
-## 10. GitHub Release v2.0.0
+## 10. GitHub Release v2.1.0
 
 1. **Status: Not started** — Finish all work and verification on `dev`.
 2. **Status: Not started** — Merge `dev` into `main`.
@@ -521,7 +534,7 @@ Do not submit if any required final verification remains incomplete.
 4. **Status: Not started** — Create annotated tag:
 
    ```bash
-   git tag -a v2.0.0 -m "Release v2.0.0"
+   git tag -a v2.1.0 -m "Release v2.1.0"
    ```
 
 5. **Status: Not started** — Push `main` and the tag.
@@ -531,7 +544,7 @@ Do not submit if any required final verification remains incomplete.
 8. **Status: Not started** — Synchronize release-only `main` commits back to
    `dev` if necessary.
 
-If a release-blocking defect is found after publishing `v2.0.0`, do not move or
+If a release-blocking defect is found after publishing `v2.1.0`, do not move or
 overwrite the tag. Fix it on `dev` and publish a new patch version.
 
 ## 11. Spec Kit Community Submission
@@ -554,14 +567,14 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 
 1. **Status: Approved** — Extension ID: `phase-orchestrator`.
 2. **Status: Approved** — Extension Name: `Phase Orchestrator`.
-3. **Status: Approved** — Version: `2.0.0`.
+3. **Status: Approved** — Version: `2.1.0`.
 4. **Status: Approved** — Description:
    `Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.`
 5. **Status: Approved** — Author: `awasali14`.
 6. **Status: Approved** — Repository:
    `https://github.com/awasali14/spec-kit-phase-orchestrator`.
 7. **Status: Approved as a planned value; not yet published** — Download URL:
-   `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip`.
+   `https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.1.0.zip`.
 8. **Status: Approved** — License: `MIT`.
 9. **Status: Approved** — Homepage:
    `https://github.com/awasali14/spec-kit-phase-orchestrator`.
@@ -610,19 +623,19 @@ overwrite the tag. Fix it on `dev` and publish a new patch version.
 4. **Status: Completed on 2026-08-07** — All
    command files exist and are properly formatted.
 5. **Status: Completed** — Extension ID follows lowercase-with-hyphens naming.
-6. **Status: Not started** — `v2.0.0` GitHub release exists.
+6. **Status: Not started** — `v2.1.0` GitHub release exists.
 7. **Status: Not started** — Extension installs successfully through the final
    download URL.
 8. **Status: Not started** — All documented command modes execute without
    errors in the final release test matrix.
 9. **Status: Completed on 2026-08-07** — Make documentation complete and accurate for the
-   v2.0.0 workflow.
+   v2.1.0 workflow.
 10. **Status: Completed on 2026-08-07** — Final security and secret review finds no known
     vulnerabilities or exposed credentials.
 11. **Status: Completed on 2026-08-07** —
     Tested on at least one realistic project.
 12. **Status: Not started** — Final testing details and example usage are copied
-    from verified `v2.0.0` evidence into the submission issue.
+    from verified `v2.1.0` evidence into the submission issue.
 
 ### Proposed Catalog Entry
 
@@ -636,8 +649,8 @@ before submission:
     "id": "phase-orchestrator",
     "description": "Orchestrate each Spec Kit tasks.md phase through isolated test, implementation, verification, remediation, and documentation stages with parent-owned Git gates.",
     "author": "awasali14",
-    "version": "2.0.0",
-    "download_url": "https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.0.0.zip",
+    "version": "2.1.0",
+    "download_url": "https://github.com/awasali14/spec-kit-phase-orchestrator/archive/refs/tags/v2.1.0.zip",
     "repository": "https://github.com/awasali14/spec-kit-phase-orchestrator",
     "homepage": "https://github.com/awasali14/spec-kit-phase-orchestrator",
     "documentation": "https://github.com/awasali14/spec-kit-phase-orchestrator/tree/main/docs",
@@ -786,7 +799,8 @@ installed-payload contract agree.
 handoff schema and
 runtime references while excluding tests, fixtures, submission notes,
 GitHub/workspace metadata, caches, and local planning files. Manifest schema
-version remains `1.0`; extension and handoff contract versions are `2.0.0`.
+version remains `1.0`; the extension version is `2.1.0`, while the unchanged
+handoff and report wire-contract versions remain `2.0.0`.
 
 ### Stage 4 — Verify Integration Behavior And Guidance
 
@@ -806,7 +820,7 @@ retesting.
 
 ### Stage 5 — Run Pre-Release Verification On `dev`
 
-**Status: Completed on 2026-08-07**
+**Status: In progress; automated contract suite repeated on 2026-08-27**
 
 Run unit tests, parser smoke and failure-path tests, manifest validation, a
 Cover workflow completion/resume, empty stages, classification, sanitization,
@@ -817,8 +831,9 @@ completion.
 **Exit condition:** All checks pass and the installed copy contains only the
 files allowed by Section 4.
 
-**Evidence:** All 43 unit tests, parser mode smokes, schema/sample validation,
-Python syntax validation, payload assertions, and `git diff --check` passed.
+**Evidence:** The historical v2.0 run passed 43 tests and associated smokes.
+The current v2.1 run passes all 84 unit/contract tests and `git diff --check`.
+Final release-candidate installation and compatibility checks remain pending.
 
 ### Stage 6 — Run The Compatibility And Agent Matrix
 
@@ -837,18 +852,18 @@ passed all six scenarios. Final Claude Code and Cursor retests and Spec Kit
 0.8.7 minimum-version compatibility remain pending, so this release gate is not
 complete.
 
-### Stage 7 — Finalize The `v2.0.0` Release Candidate
+### Stage 7 — Finalize The `v2.1.0` Release Candidate
 
 **Status: Not started**
 
-Set the manifest version to `2.0.0`, add the final changelog entry, update
+Set the manifest version to `2.1.0`, add the final changelog entry, update
 submission notes with all evidence available before publication, check version
 and description consistency, and perform the security and secret review.
 Commit and push the complete release candidate on `dev`.
 
 **Exit condition:** `origin/dev` contains the intended release contents and all
 pre-tag verification is green. Do not yet change README installation
-instructions to claim that the `v2.0.0` archive exists.
+instructions to claim that the `v2.1.0` archive exists.
 
 ### Stage 8 — Promote And Verify The Release Commit
 
@@ -860,7 +875,7 @@ the complete release verification suite on the resulting `main` commit.
 **Exit condition:** The exact commit to be tagged passes every applicable check
 in Section 9 with no unexplained working-tree changes.
 
-### Stage 9 — Tag And Publish `v2.0.0`
+### Stage 9 — Tag And Publish `v2.1.0`
 
 **Status: Not started**
 
@@ -874,7 +889,7 @@ the verified commit.
 
 **Status: Not started**
 
-Download the real `v2.0.0` tag archive, install it into a clean Spec Kit
+Download the real `v2.1.0` tag archive, install it into a clean Spec Kit
 project, inspect the installed payload, confirm the enabled version and
 registered command, and run a real command from that installation.
 
@@ -887,7 +902,7 @@ archive has a release-blocking defect, do not move the tag; fix it through
 **Status: Not started**
 
 Only after the archive is verified, update README installation instructions to
-the real `v2.0.0` URL and finish `docs/submission-notes.md` with the exact
+the real `v2.1.0` URL and finish `docs/submission-notes.md` with the exact
 release and test results. Make these documentation-only changes on `dev`, merge
 them into `main`, and push both branches as applicable.
 
@@ -905,7 +920,7 @@ and open the Extension Submission issue using the approved metadata and AI
 disclosure.
 
 **Exit condition:** The submitted issue contains only values supported by the
-verified `v2.0.0` release evidence.
+verified `v2.1.0` release evidence.
 
 ### Stage 13 — Handle Review Through Acceptance
 

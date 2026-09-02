@@ -1,6 +1,32 @@
 # Changelog
 
-## 2.0.0 - Unreleased
+## 2.1.0 - Unreleased
+
+### Changed
+
+1. Expanded baseline discovery from named commands to callers, references,
+   fixtures, parameterizations, tests, and complete bounded suites for every
+   affected subsystem, with explicit caveats for excluded surfaces.
+2. Required the first verifier to analyze the actual phase diff, complete all
+   safe planned validation, aggregate related in-phase failures, and preserve
+   the expanded verification surface through every remediation cycle.
+3. Made repair scope precede origin attribution so proven in-phase failures and
+   defective tests can be remediated with incomplete baseline evidence, while
+   requiring comparable baseline evidence for
+   `phase_introduced_regression` and deferral.
+4. Added deterministic validation execution policy: prefer an authorized
+   outside-sandbox route, fall back to the exact sandbox command, and require an
+   authoritative outside rerun before attributing a plausible sandbox failure
+   to product code. When a worker cannot obtain approval, the parent requests
+   permission and relaunches a fresh worker for the same stage. Only a denied or
+   still-unavailable parent request becomes an environment blocker; neither the
+   blocker nor relaunch consumes a remediation attempt.
+5. Added the Git-tracked development `issues-tracker.md`, excluded it from the
+   installed extension payload, and documented that publication boundary.
+6. Kept the workflow-completion marker at `v2` and the unchanged report and
+   handoff wire contracts at schema version `2.0.0`.
+
+## 2.0.0 - Superseded pre-release
 
 ### Changed
 

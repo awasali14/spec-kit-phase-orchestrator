@@ -75,8 +75,28 @@ fresh verifier runs. Verifiers are strictly read-only.
 
 Only a demonstrably pre-existing, unrelated, unchanged regression with passing
 focused and independent-phase gates and proven downstream safety may be
-deferred. A phase-introduced regression first receives in-scope remediation;
-uncertain attribution or required cross-phase changes stop the queue.
+deferred. Scope is classified before origin: a proven, repairable in-phase
+failure or defective test first receives remediation even when baseline
+evidence is incomplete. Comparable baseline evidence remains required for
+`phase_introduced_regression`; uncertain scope, required cross-phase changes,
+or unproven out-of-phase failures stop the queue.
+
+Baseline workers treat task-file commands as minimum coverage and discover
+callers, references, fixtures, parameterizations, tests, and complete bounded
+affected-subsystem suites. The first verifier independently repeats that impact
+analysis, completes every safe planned command, aggregates related failures,
+and establishes a verification surface that every later verifier preserves.
+Excluded or untested affected surfaces are reported as caveats.
+
+All baseline, test, implementation, verification, and remediation handoffs
+carry the validation execution policy. They prefer an already-authorized
+outside-sandbox route and otherwise run the exact command inside. A plausible
+sandbox restriction requires an exact outside rerun with permission before
+defect attribution. The worker requests approval first. If it cannot obtain
+approval, the parent asks the user and, when approved, relaunches a fresh worker
+for the same stage and exact outside command. Only a denied or unavailable
+parent-level request remains an environment blocker. Neither the blocker nor
+relaunch consumes a remediation attempt. Documentation workers are unaffected.
 
 In `all` mode, the parent owns the queue. It completes every stage gate and
 confirms the durable workflow-complete documentation marker before starting

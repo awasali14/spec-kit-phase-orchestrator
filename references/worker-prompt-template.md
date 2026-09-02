@@ -55,6 +55,29 @@ The parent owns Git and supplies only phase/task identifiers, relevant paths,
 compact manifests, validation summaries, regression-baseline evidence, deferred
 findings, expected failures, and the prior SHA.
 
+## Validation Execution Environment
+
+Append this policy to every baseline-verification, test, implementation,
+verification, and remediation handoff. It is not applicable to documentation
+workers, which must not run project validation:
+
+```text
+When running project validation, prefer execution outside the Codex sandbox
+when an already-authorized outside route is available. If outside execution is
+not currently permitted, run the exact command inside the sandbox instead of
+stopping. Use a passing result or an ordinary assertion/product failure
+normally. If the sandbox run fails for a plausibly sandbox-related reason,
+including filesystem or socket permission, blocked network, service, database,
+or container access, restricted subprocess execution, or sandbox termination,
+do not attribute it to the product and do not consume a remediation attempt.
+Request user permission to rerun that exact command outside the sandbox. When
+permission is granted, perform the outside rerun before returning, treat its
+result as authoritative, and record the exact command and environment used. If
+you cannot request permission, permission is denied, or outside execution
+remains unavailable, return the exact command, sandbox environment, compact
+failure signature, and an environment blocker rather than an in-phase defect.
+```
+
 ## Regression Baseline Role
 
 Append only for `stage: baseline_verification`:
@@ -65,8 +88,12 @@ format, or generate repository files, including task checkboxes, snapshots,
 caches, coverage, or reports. You are never commit eligible and have no assigned
 task IDs.
 
-Identify suitable regression commands from the phase scope, repository
-configuration, and existing validation. Use non-writing settings. For each
+Treat validation commands named in `tasks.md` as minimum coverage, not the
+complete baseline. Identify changed or removed behavior in the phase, then
+search its callers, references, fixtures, parameterizations, and tests to map
+every affected subsystem. Run the complete bounded suite for every affected
+subsystem in addition to suitable commands from repository configuration and
+existing validation. Use non-writing settings. For each
 command record its exact text, status, a compact non-secret environment
 fingerprint, failing test identities, and normalized material failure
 signatures. Do not include secrets, raw logs, timestamps, durations, or other
@@ -75,7 +102,8 @@ unstable output in a signature.
 A failing baseline is evidence, not a stage failure. Return
 `baseline_recorded` when the report and read-only gate are valid. Record
 unavailable or non-comparable evidence explicitly; do not infer that a later
-failure was pre-existing without a comparable baseline.
+failure was pre-existing without a comparable baseline. List every excluded or
+untested affected surface in `caveats`.
 ```
 
 ## Test Role
@@ -97,10 +125,12 @@ eligible only when tests collect and run correctly and every expected failure
 is attributable to still-missing assigned implementation. Syntax, collection,
 fixture, infrastructure, environment, flaky, or unrelated failures are not an
 expected RED. Correct failures within the assigned test scope and rerun the
-focused gate as needed. If a non-eligible failure remains after available
-in-scope correction, restore assigned checkboxes to their baseline unchecked
-state and report the gate as failed. Mark assigned checkboxes only after a valid
-green or eligible RED gate.
+focused gate as needed. Plausibly sandbox-related environment failures follow
+the Validation Execution Environment policy and return `blocked`, not `failed`.
+If another non-eligible failure remains after available in-scope correction,
+restore assigned checkboxes to their baseline unchecked state and report the
+gate as failed. Mark assigned checkboxes only after a valid green or eligible
+RED gate.
 ```
 
 ## Implementation Role
@@ -139,26 +169,49 @@ Operate strictly read-only: do not edit, create, delete, format, or generate
 repository files, including task checkboxes, snapshots, caches, coverage, or
 reports. Independently inspect the phase diff and run non-writing validation.
 
+For the first verification, independently analyze the actual phase diff,
+identify changed or removed behavior, and search its callers, references,
+fixtures, parameterizations, and tests to map affected subsystems. Run the
+focused gate, independent-phase gate, every exact baseline command, and the
+complete bounded suite for every affected subsystem. Commands in `tasks.md`
+are minimum coverage. Continue all planned commands after a failure unless
+execution becomes unsafe, then aggregate all related in-phase failures into a
+single report before remediation. List excluded or untested affected surfaces
+in `caveats`. On every later verification, preserve and rerun the expanded
+verification surface supplied by the parent; add newly discovered affected
+coverage but never narrow the established surface.
+
 Return a structured verdict with separate focused, independent-phase, and
-suitable regression results. For each result include command, status, and a
-short finding. Report changed-path scope and any unrelated or generated
+suitable regression results, including complete affected-subsystem suites.
+For each result include command, status, and a short finding. Report
+changed-path scope and any unrelated or generated
 artifacts. You own technical attribution and propose `remediate`, `defer`, or
 `block`; the parent owns the final transition. A verifier is never commit
 eligible.
 
+Classify scope before origin. First determine whether the requirement and a
+repair belong to the current phase. A proven, repairable in-phase issue is
+`phase_scoped_failure` or `defective_test` with disposition `remediate`, even
+when `baseline_evidence` is `null`; use `uncertain` or `not_applicable` origin
+attribution as appropriate. Never block its remediation solely because baseline
+coverage was incomplete. Then use baseline comparison to attribute origin.
+
 Rerun every exact regression-baseline command in a comparable environment. A
 baseline pass followed by a failure, an additional failing test identity, or a
 materially changed failure signature is phase introduced or worsened. Classify
-it as `phase_introduced_regression` and use disposition `remediate` when an
-in-scope repair is possible; otherwise use `block`.
+it as `phase_introduced_regression`, include comparable non-null baseline
+evidence, and use disposition `remediate` when an in-scope repair is possible;
+otherwise use `block`.
 
 Use `preexisting_unrelated_regression` with proposed disposition `defer` only
 when the same command and comparable environment show identical failing test
 identities and material signatures, no new failure, passing focused and
 independent-phase validation, and confirmed attribution. Return
 `downstream_safe: null`; the parent owns the downstream-safety determination.
-Use `inconclusive` with disposition `block` when baseline, attribution, or
-comparison evidence is missing, non-comparable, contradictory, or uncertain.
+Use `inconclusive` with disposition `block` for uncertain scope, a required
+cross-phase repair, or an unproven out-of-phase failure. Incomplete baseline
+comparison still prevents confirmed origin attribution and deferral, but does
+not block a separately proven in-phase repair.
 A phase-safe verdict is `passed` or `passed_with_deferred_findings` after parent
 acceptance.
 
@@ -234,8 +287,21 @@ than omitting fields. These are report-schema forms, not handoff-schema forms.
 
 Only verification findings may use `remediate`, `defer`, or `block`.
 Non-verifier findings always use `disposition: null`. Use `null` comparison
-evidence only when comparison does not apply. Never include secrets, raw logs,
+evidence when origin comparison does not apply or a proven in-phase issue lacks
+baseline coverage. A `phase_scoped_failure` or `defective_test` may therefore
+use `baseline_evidence: null` with disposition `remediate`; a
+`phase_introduced_regression` must include comparable baseline evidence. Never
+include secrets, raw logs,
 timestamps, durations, or unstable data in fingerprints or signatures.
+
+When outside permission is denied or unavailable after a plausible sandbox
+failure, represent the environment blocker without adding fields. Use a blocked
+report and an `inconclusive` finding whose current evidence records the exact
+command, sandbox environment fingerprint, and compact failure signature. A
+verification finding uses disposition `block`; findings from
+baseline-verification, test, implementation, and remediation use disposition
+`null`. Include a caveat that the exact outside rerun was unavailable. This is
+environment evidence, not product-defect attribution.
 
 ### Baseline Verification Report Form
 
@@ -325,6 +391,8 @@ Every verification finding includes `id`, `kind`, `gate`, non-null
 `affected_paths`, `baseline_evidence`, `current_evidence`, and
 `downstream_safe`. A defer requires confirmed comparable baseline/current
 evidence and returns `downstream_safe: null` until the parent checks the queue.
+An in-phase `phase_scoped_failure` or `defective_test` may use null baseline
+evidence with `remediate`; `phase_introduced_regression` may not.
 An unresolved verdict contains `remediate`; a blocked or failed verdict
 contains `block`; a passed verdict has no findings.
 

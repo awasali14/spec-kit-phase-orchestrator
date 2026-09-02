@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/awasali14/spec-kit-phase-orchestrator/schemas/phase-report.schema.json",
   "title": "Spec Kit Phase Stage Worker Report",
-  "description": "Completed worker-to-parent report for one isolated Phase Orchestrator 2.0 stage.",
+  "description": "Completed worker-to-parent report for one isolated Phase Orchestrator 2.1 stage. Wire contract remains 2.0.0.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -383,6 +383,16 @@
         "downstream_safe": {"type": ["boolean", "null"]}
       },
       "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "phase_introduced_regression"}}},
+          "then": {
+            "properties": {
+              "attribution": {"const": "phase_introduced"},
+              "baseline_evidence": {"$ref": "#/$defs/comparison_evidence"},
+              "current_evidence": {"$ref": "#/$defs/comparison_evidence"}
+            }
+          }
+        },
         {
           "if": {"properties": {"disposition": {"const": "defer"}}},
           "then": {
