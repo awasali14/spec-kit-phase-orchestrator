@@ -186,10 +186,12 @@ only when useful. Route other relevant skills and automatically selected
 frontend/backend skills and MCPs only to the phase stages that need them.
 Include the selected MCPs, applicable MCP opt-outs, and Exa-first web-search
 policy in each handoff. Keep operational notes similarly scoped.
-Append the complete Validation Execution Environment policy to every
-baseline-verification, test, implementation, verification, and remediation
-handoff. Documentation workers do not receive it because they do not run
-project validation.
+For every baseline-verification, test, implementation, verification, and
+remediation handoff, append the worker-facing Validation Execution Environment
+block from `.specify/extensions/phase-orchestrator/references/worker-prompt-template.md`.
+Do not copy the numbered orchestrator-facing Validation Execution Environment
+policy below verbatim into worker prompts. Documentation workers do not receive
+the block because they do not run project validation.
 Do not leak parent orchestration context. Only the documentation stage receives
 the phase document path/template or Mermaid instructions.
 
@@ -227,9 +229,10 @@ implementation, verification, or remediation worker runs project validation:
    any scope-clean reviewed changes from the blocked stage as known same-stage
    state, never as protected unrelated work, and do not commit them before the
    relaunched worker completes. Neither the blocker nor this relaunch consumes
-   a remediation attempt. Stop and report the environment blocker only when
-   the parent-level permission request is denied or outside execution remains
-   unavailable.
+   a remediation attempt. The parent may stop and report the environment
+   blocker only after requesting user authorization for the exact outside
+   command: stop if the request is denied, or if authorization is granted but
+   outside execution still cannot be performed.
 
 ## Stage Sequence
 

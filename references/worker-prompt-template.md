@@ -391,8 +391,10 @@ Every verification finding includes `id`, `kind`, `gate`, non-null
 `affected_paths`, `baseline_evidence`, `current_evidence`, and
 `downstream_safe`. A defer requires confirmed comparable baseline/current
 evidence and returns `downstream_safe: null` until the parent checks the queue.
-An in-phase `phase_scoped_failure` or `defective_test` may use null baseline
-evidence with `remediate`; `phase_introduced_regression` may not.
+An in-phase `phase_scoped_failure` or `defective_test` may use
+`baseline_evidence: null` with disposition `remediate`. A
+`phase_introduced_regression` requires comparable, non-null baseline evidence;
+when its repair is in scope, it remains eligible for disposition `remediate`.
 An unresolved verdict contains `remediate`; a blocked or failed verdict
 contains `block`; a passed verdict has no findings.
 
