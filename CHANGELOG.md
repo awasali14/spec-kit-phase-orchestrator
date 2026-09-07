@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Removed parser keyword/filename task classification. The parent records
+  deliverable-based assignments with rationales and explicit revision history.
+  Added a standard-library assignment validator for exact coverage, source
+  drift, and checkbox-aware resume. Parser pending stage is now `classification`;
+  role groups come from the validator and `tests_first_tasks` is removed.
+  Added role-mismatch correction and deliverable-based completion checks.
+
 1. Expanded baseline discovery from named commands to callers, references,
    fixtures, parameterizations, tests, and complete bounded suites for every
    affected subsystem, with explicit caveats for excluded surfaces.

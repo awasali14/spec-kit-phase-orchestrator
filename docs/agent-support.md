@@ -210,6 +210,6 @@ Codex is not required.
 Claude Code is not required.
 
 Any agent integration that can execute the Spec Kit command prompt and run the
-supporting parser can use the workflow. Agents without a Python runtime can
-still follow the command text manually, but the packaged parser requires
+supporting parser can use the workflow. Execution requires structural inventory and assignment validation before
+dispatch; the packaged scripts require
 Python 3.10 or newer.

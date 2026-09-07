@@ -60,8 +60,7 @@ python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-
 python3 .specify/extensions/phase-orchestrator/scripts/phase_tasks.py specs/002-feature/tasks.md --mode all --json
 ```
 
-The JSON output includes the selected phase, test and implementation task
-classification, generated Markdown documentation path, `task_complete`,
+The JSON output includes the selected phase, complete structural task records and source digest, generated Markdown documentation path, `task_complete`,
 `documentation_complete`, `workflow_complete`, `next_stage`, and a
 workflow-aware phase queue for `all`.
 
@@ -188,17 +187,26 @@ dirty in its baseline, stop without touching unrelated pre-existing changes.
 
 ## Task Classification
 
-The parser separates incomplete tasks into `test_tasks` and
-`implementation_tasks` for worker handoff compatibility.
+The parser inventories task IDs, full text, sections, and checkbox state. The
+parent classifies tasks by primary deliverable, records a brief rationale, and
+saves a durable assignment manifest. Commands used to verify work do not
+determine its primary deliverable. Test filenames and headings cannot override
+task meaning.
 
-Tasks are classified as tests when they are under headings like `Tests`,
-`Tests First`, or `Tests for Phase N`; when they use explicit test-writing or
-test-running wording; or when they target actual test/spec files such as
-`.test.*`, `.spec.*`, or `test_*`.
+The parent runs `scripts/validate_assignments.py` before dispatch to check exact
+coverage and source freshness. All phase IDs are recorded once, including checked
+IDs; only unchecked IDs are dispatched. Parser `next_stage: classification`
+indicates pending assignment validation. Role groups now come exclusively from
+the assignment validator; `tests_first_tasks` is removed.
 
-Fixture, fake, helper, mock, setup, utility, factory, and scaffolding tasks are
-treated as implementation/setup tasks when their only test signal is a path
-under `tests/`.
+Resume reuses assignments. A worker raises a suspected mismatch by ending its
+turn with a clarification question, separate from its final stage report. The
+parent reviews it and either continues the same worker with an explanatory
+follow-up or corrects the assignment for the appropriate role.
+Confirmed mistakes or source edits require an archived revision,
+a correction reason, reconciliation of checkbox evidence, and validation before a
+fresh worker starts. See the command's Parent-Owned Task Assignments section for
+the manifest format, storage path, and correction procedure.
 
 ## Validation And Documentation
 

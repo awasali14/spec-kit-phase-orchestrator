@@ -334,94 +334,6 @@ class PhaseTasksParserTest(unittest.TestCase):
             ["T017", "T018", "T019", "T020", "T021"],
         )
 
-    def test_separates_test_tasks_from_implementation_tasks(self) -> None:
-        output = phase_tasks.build_output(SAMPLE_TASKS, "next", 3)
-        selected = output["selected_phase"]
-
-        self.assertEqual([task["id"] for task in selected["test_tasks"]], ["T007", "T008"])
-        self.assertEqual(
-            [task["id"] for task in selected["tests_first_tasks"]],
-            ["T007", "T008"],
-        )
-        self.assertEqual(
-            [task["id"] for task in selected["implementation_tasks"]],
-            ["T009", "T010", "T011"],
-        )
-
-    def test_fixture_setup_under_tests_path_is_implementation(self) -> None:
-        content = """# Tasks: Fixture Setup Feature
-
-## Phase 1: Setup
-
-- [ ] T001 Add fake scholarship fixtures in `tests/fakes.py`
-- [ ] T002 Create shared test helper setup in `tests/helpers.py`
-- [ ] T003 Add feature constants in `src/constants.py`
-"""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            tasks_path = Path(temp_dir) / "tasks.md"
-            tasks_path.write_text(content, encoding="utf-8")
-            output = phase_tasks.build_output(tasks_path, "next", None)
-
-        selected = output["selected_phase"]
-        self.assertEqual(selected["test_tasks"], [])
-        self.assertEqual(
-            [task["id"] for task in selected["implementation_tasks"]],
-            ["T001", "T002", "T003"],
-        )
-
-    def test_tests_first_heading_is_classified_as_tests(self) -> None:
-        content = """# Tasks: Test First Feature
-
-## Phase 1: User Story 1
-
-### Tests First
-
-- [ ] T001 Add contract coverage in `tests/contracts/user_api.py`
-
-### Implementation
-
-- [ ] T002 Add user API in `src/user_api.py`
-"""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            tasks_path = Path(temp_dir) / "tasks.md"
-            tasks_path.write_text(content, encoding="utf-8")
-            output = phase_tasks.build_output(tasks_path, "next", None)
-
-        selected = output["selected_phase"]
-        self.assertEqual([task["id"] for task in selected["test_tasks"]], ["T001"])
-        self.assertEqual(
-            [task["id"] for task in selected["implementation_tasks"]],
-            ["T002"],
-        )
-
-    def test_test_and_spec_filenames_are_classified_as_tests(self) -> None:
-        content = """# Tasks: Filename Test Feature
-
-## Phase 1: User Story 1
-
-- [ ] T001 Add route behavior in `tests/routes/app.test.ts`
-- [ ] T002 Add hook behavior in `tests/hooks/useApp.spec.ts`
-- [ ] T003 Add API behavior in `tests/test_api.py`
-- [ ] T004 Add API client in `src/api.py`
-"""
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            tasks_path = Path(temp_dir) / "tasks.md"
-            tasks_path.write_text(content, encoding="utf-8")
-            output = phase_tasks.build_output(tasks_path, "next", None)
-
-        selected = output["selected_phase"]
-        self.assertEqual(
-            [task["id"] for task in selected["test_tasks"]],
-            ["T001", "T002", "T003"],
-        )
-        self.assertEqual(
-            [task["id"] for task in selected["implementation_tasks"]],
-            ["T004"],
-        )
-
     def test_docs_dir_overrides_generated_documentation_paths(self) -> None:
         output = phase_tasks.build_output(
             SAMPLE_TASKS, "next", 3, Path("docs/custom")
@@ -498,11 +410,6 @@ class PhaseTasksParserTest(unittest.TestCase):
         self.assertEqual(output["phase_count"], 5)
         self.assertEqual(selected["number"], 4)
         self.assertEqual(selected["incomplete_task_ids"], ["T005", "T006"])
-        self.assertEqual([task["id"] for task in selected["test_tasks"]], ["T005"])
-        self.assertEqual(
-            [task["id"] for task in selected["implementation_tasks"]],
-            ["T006"],
-        )
 
     def test_checked_tasks_without_documentation_resume_at_verification(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -575,7 +482,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             [phase["number"] for phase in output["selected_phases"]], [2, 3]
         )
         self.assertEqual(output["selected_phases"][0]["next_stage"], "verification")
-        self.assertEqual(output["selected_phases"][1]["next_stage"], "implementation")
+        self.assertEqual(output["selected_phases"][1]["next_stage"], "classification")
 
     def test_empty_test_and_implementation_stages_are_skipped(self) -> None:
         implementation_only = """# Tasks: Implementation Only
@@ -603,10 +510,10 @@ class PhaseTasksParserTest(unittest.TestCase):
                 "selected_phase"
             ]
 
-        self.assertEqual(implementation["test_tasks"], [])
-        self.assertEqual(implementation["next_stage"], "implementation")
-        self.assertEqual(tests["implementation_tasks"], [])
-        self.assertEqual(tests["next_stage"], "test")
+        self.assertNotIn("test_tasks", implementation)
+        self.assertEqual(implementation["next_stage"], "classification")
+        self.assertNotIn("implementation_tasks", tests)
+        self.assertEqual(tests["next_stage"], "classification")
 
     def test_all_workflows_complete_returns_no_selected_phase(self) -> None:
         content = """# Tasks: Complete Feature
@@ -968,7 +875,7 @@ class PhaseTasksParserTest(unittest.TestCase):
         ]:
             self.assertIn(expected, policy)
         self.assertNotIn("the parent can request permission", policy)
-        self.assertIn("Documentation workers do not receive it", command)
+        self.assertIn("Documentation workers do not receive the block", command)
 
     def test_sandbox_failure_requires_outside_rerun_before_attribution(self) -> None:
         command = compact(COMMAND_FILE.read_text(encoding="utf-8"))
@@ -1793,7 +1700,7 @@ class PhaseTasksParserTest(unittest.TestCase):
             self.assertIn(heading, tracker)
         for issue_id in ["PO-001", "PO-002"]:
             self.assertIn(issue_id, tracker)
-        for status in ["Open", "Addressed", "Validated"]:
+        for status in ["Open", "Closed"]:
             self.assertIn(status, tracker)
         self.assertIn("issues-tracker.md", publication)
         self.assertIn("must not be included in an installed extension payload", publication)

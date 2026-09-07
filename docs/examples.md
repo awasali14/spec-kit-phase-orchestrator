@@ -129,20 +129,16 @@ Representative fields are:
     "task_complete": false,
     "documentation_complete": false,
     "workflow_complete": false,
-    "next_stage": "test",
+    "next_stage": "classification",
     "incomplete_task_ids": ["T005", "T006", "T007", "T008"],
     "counts": {
       "total": 4,
       "completed": 0,
-      "incomplete": 4,
-      "test_tasks": 2,
-      "implementation_tasks": 2
+      "incomplete": 4
     },
-    "tests_first_tasks": [
+    "tasks": [
       {"id": "T005", "section": "Tests for Phase 3"},
-      {"id": "T006", "section": "Tests for Phase 3"}
-    ],
-    "implementation_tasks": [
+      {"id": "T006", "section": "Tests for Phase 3"},
       {"id": "T007", "section": "Implementation for Phase 3"},
       {"id": "T008", "section": "Implementation for Phase 3"}
     ]
@@ -160,7 +156,7 @@ every gate for one phase before starting the next.
 The parent records the Git baseline and launches a fresh read-only
 regression-baseline worker before phase mutations. It records exact suitable regression
 commands, a compact environment fingerprint, failing test identities, and
-material failure signatures, then converts the parser result into compact,
+material failure signatures, then validates parent-owned deliverable assignments and builds compact,
 role-specific handoffs. A shortened test handoff looks like this:
 
 ```text

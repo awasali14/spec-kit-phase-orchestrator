@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -19,20 +20,6 @@ TASK_RE = re.compile(r"^- \[(?P<mark>[ xX])\]\s+(?P<id>T\d+)\s*(?P<body>.*)$")
 PURPOSE_RE = re.compile(r"^\*\*Purpose\*\*:\s*(.+?)\s*$")
 CHECKPOINT_RE = re.compile(r"^\*\*Checkpoint\*\*:\s*(.+?)\s*$")
 INDEPENDENT_TEST_RE = re.compile(r"^\*\*Independent Test\*\*:\s*(.+?)\s*$")
-TEST_SECTION_RE = re.compile(r"^tests(?:\s+first|\s+for\s+phase\s+\d+)?$", re.I)
-TEST_FILE_RE = re.compile(r"(^|[/`])(?:test_[^/`\s]+|[^/`\s]+\.(?:test|spec)\.[^/`\s]+)")
-HELPER_SETUP_RE = re.compile(
-    r"\b(?:fixtures?|fakes?|helpers?|mocks?|stubs?|setup|utilities?|utils?|"
-    r"factories|factory|builders?|scaffolding)\b",
-    re.I,
-)
-EXPLICIT_TEST_ACTION_RE = re.compile(
-    r"\b(?:add|create|write|implement|extend|update|run|execute|fix|verify)\b"
-    r".*\b(?:unit|integration|e2e|end-to-end|regression|acceptance|"
-    r"accessibility|a11y|contract)?\s*tests?\b",
-    re.I,
-)
-TEST_NOUN_RE = re.compile(r"\b(?:test|spec)\s+(?:file|case|suite|coverage|run|command)\b", re.I)
 WORKFLOW_COMPLETE_MARKER = "<!-- phase-orchestrator:workflow-complete v2 -->"
 
 
@@ -77,23 +64,11 @@ def parse_story(body: str) -> str | None:
     return match.group(1) if match else None
 
 
-def is_test_task(task: Task) -> bool:
-    section = task.section.strip()
-    text = task.text
-
-    if TEST_SECTION_RE.match(section):
-        return True
-
-    if TEST_FILE_RE.search(text):
-        return True
-
-    if HELPER_SETUP_RE.search(text):
-        return False
-
-    if EXPLICIT_TEST_ACTION_RE.search(text) or TEST_NOUN_RE.search(text):
-        return True
-
-    return False
+def inventory_digest(path: Path) -> str:
+    """Bind assignments to source meaning while permitting checkbox progress."""
+    source = path.read_text(encoding="utf-8")
+    normalized = re.sub(r"(?m)^- \[[ xX]\](?=\s+T\d+\b)", "- [ ]", source)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def infer_feature_slug(path: Path, feature_title: str | None) -> str:
@@ -126,6 +101,7 @@ def parse_tasks(path: Path) -> tuple[list[Phase], str | None]:
     current: Phase | None = None
     section = "General"
     seen_numbers: set[int] = set()
+    seen_ids: set[str] = set()
     feature_title: str | None = None
 
     try:
@@ -155,6 +131,8 @@ def parse_tasks(path: Path) -> tuple[list[Phase], str | None]:
             continue
 
         if current is None:
+            if TASK_RE.match(line):
+                raise ValueError(f"task outside a phase at line {lineno}")
             continue
 
         subheading_match = SUBHEADING_RE.match(line)
@@ -179,7 +157,15 @@ def parse_tasks(path: Path) -> tuple[list[Phase], str | None]:
 
         task_match = TASK_RE.match(line)
         if not task_match:
+            if line.startswith(("  ", "\t")) and current.tasks:
+                previous = current.tasks[-1]
+                current.tasks[-1] = replace(previous, text=previous.text + "\n" + line)
             continue
+
+        task_id = task_match.group("id")
+        if task_id in seen_ids:
+            raise ValueError(f"duplicate task ID {task_id} at line {lineno}")
+        seen_ids.add(task_id)
 
         body = task_match.group("body").strip()
         current.tasks.append(
@@ -211,8 +197,6 @@ def phase_to_dict(
     explicit_docs_path: Path | None = None,
 ) -> dict[str, Any]:
     incomplete = phase.incomplete
-    test_tasks = [task for task in incomplete if is_test_task(task)]
-    implementation_tasks = [task for task in incomplete if task not in test_tasks]
     documentation_path = phase_documentation_path(
         phase, docs_dir, feature_slug, explicit_docs_path
     )
@@ -232,10 +216,8 @@ def phase_to_dict(
 
     if workflow_complete:
         next_stage = None
-    elif test_tasks:
-        next_stage = "test"
-    elif implementation_tasks:
-        next_stage = "implementation"
+    elif incomplete:
+        next_stage = "classification"
     else:
         next_stage = "verification"
 
@@ -257,14 +239,8 @@ def phase_to_dict(
             "total": len(phase.tasks),
             "completed": len([task for task in phase.tasks if task.completed]),
             "incomplete": len(incomplete),
-            "test_tasks": len(test_tasks),
-            "implementation_tasks": len(implementation_tasks),
         },
-        "test_tasks": [task_to_dict(task) for task in test_tasks],
-        "tests_first_tasks": [task_to_dict(task) for task in test_tasks],
-        "implementation_tasks": [
-            task_to_dict(task) for task in implementation_tasks
-        ],
+        "tasks": [task_to_dict(task) for task in phase.tasks],
         "incomplete_tasks": [task_to_dict(task) for task in incomplete],
     }
 
@@ -388,6 +364,7 @@ def build_output(
 
     return {
         "tasks_path": str(path),
+        "inventory_digest": inventory_digest(path),
         "feature_slug": feature_slug,
         "docs_dir": docs_dir.as_posix() if docs_dir is not None else None,
         "explicit_docs_path": (

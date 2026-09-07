@@ -90,12 +90,107 @@ or frozen queue state.
 6. In a range or `all`, execute one phase through every gate and its
    workflow-complete documentation marker before reparsing and selecting the
    next phase. For a range, reparse the current phase state, resume at its
-   reported `next_stage`, and advance only to the next number in the frozen
+   validated assignment `next_stage` when tasks remain, and advance only to the next number in the frozen
    queue. Do not advance merely because task checkboxes are checked.
 7. If an explicitly selected phase or a phase inside a range is already
    workflow complete, report or skip that phase and do not rerun it unless the
    user explicitly asks. Stop successfully when the frozen range reaches its
    ending phase.
+
+## Parent-Owned Task Assignments
+
+The parser supplies structural facts only. `next_stage: classification` means
+pending tasks need validated parent assignments, never a test/implementation
+recommendation. The parent has full authority over semantic classification.
+
+Before the first worker for a phase, read the complete source and relevant
+repository context. Classify each task in that phase by its primary deliverable:
+`test` for test authoring or explicitly test-only support/validation work;
+`implementation` for production behavior, migrations, configuration, or setup.
+Headings, filenames, and validation commands are context, not decisive rules.
+Assign each task to exactly one role based on its primary deliverable: test
+authoring or implementation. Commands that run tests to verify implementation
+do not make that task a test-authoring task. If a task explicitly requires both
+deliverables and its intended role is unclear, resolve that ambiguity before
+dispatch.
+
+Record every task ID in the selected phase, including checked tasks for stable
+resume accounting. This does not reopen checked tasks. Save a parent-only JSON
+manifest beside `tasks.md` in `.phase-orchestrator/phase-<N>-assignments.json`:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "phase_number": 1,
+  "inventory_digest": "<inventory_digest from parser output>",
+  "revision": 1,
+  "reason": "Initial deliverable-based assignments",
+  "assignments": [
+    {"id": "T001", "stage": "implementation", "rationale": "Delivers the requested application behavior; the listed checks verify that behavior."}
+  ]
+}
+```
+
+The phase number, task ID, and rationale above are illustrative. Use the actual
+selected phase number and include every ID from that phase exactly once with a
+short deliverable-based rationale. Treat these manifests
+and revision archives as parent-owned operational state, outside worker manifests
+and stage commits. Never overwrite unrelated pre-existing state.
+
+Before dispatch and on resume, run:
+
+```text
+python3 .specify/extensions/phase-orchestrator/scripts/validate_assignments.py <tasks.md> <assignments.json> --phase <N>
+```
+
+Pass the same `--docs-dir` or `--docs-path` override used for selection. Require
+exit 0. The validator checks phase identity, source digest, exact ID coverage,
+duplicates, allowed roles, and nonempty rationales. It does not judge task
+meaning. Its `test_tasks`, `implementation_tasks`, and `next_stage` drive task
+stage dispatch. The parser no longer emits task role groups or their counts.
+The source digest ignores checkbox progress but detects other source edits,
+including dependencies and notes outside the selected phase.
+
+Freeze validated assignments for dispatch. Reuse the saved manifest on resume;
+do not reclassify merely because context was compacted or a checkbox changed.
+If no manifest exists for a partly executed phase, inspect delivered work and
+checkbox evidence before recording the initial manifest; never invent prior
+classification or regression evidence.
+
+### Assignment Correction
+
+If a worker suspects an assignment mismatch, it ends its current turn with a
+clarification question identifying the task and reason. Treat this as a question,
+not a completed stage report or a stage transition. The parent reviews the
+concern. If the assignment is correct, send the explanation as a follow-up to
+the same worker and continue its current stage. This does not reuse the worker
+for another stage. If the assignment is incorrect, correct it using the
+bookkeeping below and dispatch the work to the appropriate role.
+The clarification exchange is separate from the final stage report; apply report
+validation and completion gates when that report is returned.
+
+The parent archives the previous manifest as `phase-<N>-assignments-r<revision>.json`,
+increments `revision`, and records the correction reason and affected IDs. For
+source drift, reread the complete file and reconcile added, removed, and changed
+tasks before updating the digest. Reconcile incorrectly checked tasks against
+actual deliverables: restore an unsupported completion checkbox to unchecked,
+recording that exact parent-owned checkbox change in the correction history.
+Keep scope-clean reviewed work as known phase state, preserve protected work and
+existing commits, and do not commit an incomplete/mismatched stage. Revalidate
+coverage, then launch a fresh worker for the corrected pending assignment,
+including an earlier test stage if needed. Correcting a mistaken task assignment
+does not consume a remediation attempt. Repairs requested by the verifier still
+follow the normal remediation limit. Assignment corrections do not bypass
+baseline, validation, manifest, or completion gates.
+Do not silently reuse a workflow-complete marker after reopening work: invalidate
+it with a recorded parent-owned change and require fresh verification and
+documentation. Unrelated scope violations still follow the normal stop policy.
+
+Only send workers their assigned task text, deliverables, and short rationales;
+keep the full manifest, revisions, and lifecycle state parent-only. The verifier
+must check actual requested deliverables against checkbox completion, not merely
+successful tests. Documentation records assignment revisions and corrections
+from compact parent evidence.
 
 ## Baseline And Manifest Gate
 
@@ -253,7 +348,7 @@ baseline_verification before mutation, or durable baseline reuse on resume
 
 Skip an empty test or implementation stage. Establish the regression baseline
 before the first mutating stage of each phase, then always verify and document.
-Starting from parser `next_stage` may skip already completed task stages, but
+Starting from validated assignment `next_stage` may skip completed task stages, but
 must still run a fresh verification before documentation. On a resumed phase,
 reuse durable pre-change evidence when available. Otherwise record the
 baseline as unavailable; do not run current-state validation and mislabel it
@@ -295,7 +390,7 @@ Launch a fresh `baseline_verification` agent before phase mutations.
 
 ### Test Stage
 
-Assign only incomplete `test_tasks`.
+Assign only incomplete `test_tasks` from validated parent assignments.
 
 1. The test agent may change assigned tests, explicitly assigned test-only
    support, and its task checkboxes. It must not implement production behavior.
@@ -328,7 +423,7 @@ Assign only incomplete `test_tasks`.
 
 ### Implementation Stage
 
-Assign only incomplete `implementation_tasks`.
+Assign only incomplete `implementation_tasks` from validated parent assignments.
 
 1. The implementation agent uses the supplied official `/speckit.implement` or
    `$speckit-implement` discipline and inspects the reviewed tests directly:

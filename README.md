@@ -252,3 +252,8 @@ specify extension list
 ## License
 
 MIT
+
+Task roles are decided by the parent from each task's primary deliverable. The
+Python parser provides structural inventory; `scripts/validate_assignments.py`
+checks saved assignments for exact coverage and source freshness before dispatch.
+See [task classification](docs/usage.md#task-classification) for resume and correction behavior.
